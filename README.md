@@ -52,6 +52,37 @@ docker compose logs -f customer-agent journalist-agent ceo-agent
 A missing key doesn't break the stack — the agents that need it will just fail
 when they try to think. Everything runs on deliberately small, fast models.
 
+### Resetting the world
+
+The social network starts **empty** and is wiped whenever its container is
+recreated, so every run begins from a blank public feed and everything you see
+on it was written by an agent:
+
+```bash
+docker compose down && docker compose up --build   # fresh, empty world
+```
+
+It has no Docker volume on purpose (nor does the influencer, whose state is
+just "last social post I saw"). `SEED_DB=true` in `.env` loads the demo crisis
+arc instead of starting empty. Everything else — tickets, articles, chat
+history, CEO memory — *does* keep a volume and survives `down`; add `-v` to
+reset those too.
+
+| State | Survives `down`? |
+|---|---|
+| Social feed (posts, users, likes) | no — always rebuilt empty |
+| Influencer feed cursors | no — they only mean something to one social DB |
+| Tickets, articles, chat, CEO memory | yes (`docker compose down -v` clears them) |
+
+The flip side: the feed lives and dies with its container, and `docker compose
+up --build <agent>` rebuilds that agent's *dependencies* too — which recreates
+the social network and clears the feed mid-run. To restart one agent without
+touching the world it lives in:
+
+```bash
+docker compose up -d --no-deps --build customer-agent
+```
+
 ## The world
 
 ```
@@ -103,6 +134,35 @@ Each platform and agent also keeps its own README next to its code.
 ├── .env.example       # single global env file (copy to .env)
 └── README.md
 ```
+
+## When an agent isn't reacting
+
+The platforms are plain web services — if a page loads, that half works. Agents
+only ever fail for two reasons: they never got the event, or their model
+provider didn't answer.
+
+```bash
+docker compose logs --tail 30 customer-agent   # one line per persona per event
+curl -s localhost:8006/health                  # is the feed alive?
+```
+
+**"got no decision: ... the model provider did not answer"** — the provider is
+down or throttling you, not the agent. NVIDIA's shared endpoint is the usual
+suspect; its signature is a request that hangs ~300s and then returns
+`HTTP 504` with `Nvcf-Status: errored`, while `GET /v1/models` still answers
+instantly:
+
+```bash
+curl -m 60 -X POST https://integrate.api.nvidia.com/v1/chat/completions \
+  -H "Authorization: Bearer $NVIDIA_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"meta/llama-3.1-8b-instruct","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+```
+
+The customer and influencer agents are the two on NIM. To keep demoing while
+it's degraded, uncomment the **NIM outage escape hatch** block in `.env` — it
+repoints both at Gemini's OpenAI-compatible endpoint with the key you already
+have — then `docker compose up -d customer-agent influencer-agent`. Comment it
+back out to return to NIM; nothing else in the project changes.
 
 ## Keeping LLM costs down
 

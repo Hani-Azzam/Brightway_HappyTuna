@@ -30,10 +30,12 @@ services:
       - "3005:3000"
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=file:/app/data/dev.db
-    volumes:
-      - social_network_data:/app/data
+    # Deliberately NO volume: the SQLite file stays inside the container
+    # (/app/prisma/dev.db, the platform's documented ephemeral default), so the
+    # public feed is wiped whenever the container is recreated -- `docker compose
+    # down && up --build` always starts a fresh, empty world. It still survives
+    # `restart` / `stop`+`start`, which keep the same container.
+    # Seeding is opt-in via SEED_DB in .env (default false = empty feed).
     restart: unless-stopped
 
   customer-support-api:
@@ -149,8 +151,10 @@ services:
       - .env
     environment:
       - SOCIAL_NETWORK_BASE_URL=http://social-network:3000
-    volumes:
-      - influencer_state:/app/state
+    # No volume either, on purpose: /app/state holds "last seen social post id"
+    # cursors. Those ids only mean something to one social-network database, so
+    # they must die with it -- a cursor that outlives the feed it points into is
+    # never found again, and the poller then re-reacts to the whole backlog.
     depends_on:
       - social-network
     restart: unless-stopped
@@ -203,11 +207,13 @@ services:
       - internal-chat-mcp
     restart: unless-stopped
 
+# Named volumes = state that is meant to outlive `docker compose down`.
+# The social network and the influencer's feed cursors are intentionally NOT
+# here (see the comments on those two services): the public feed is the thing
+# you want reset between runs.
 volumes:
   customer_support_data:
-  social_network_data:
   journalism_data:
   internal_chat_data:
-  influencer_state:
   employee_data:
   ceo_data:

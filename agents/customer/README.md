@@ -118,6 +118,18 @@ untrusted `event` input and that real system.
 | `PERSONAS_CONFIG_PATH` | `/app/personas.yaml` (set in the Dockerfile) | Where `personas.py` reads persona data from. Needed explicitly because once this package is `pip install`-ed (not run as loose script files), `personas.py`'s own directory is inside `site-packages`, not `/app` -- see "Testing" below. |
 | `EVENT_GENERATOR_URL` | `http://localhost:8006` (`event_client.py`'s default) | Where the event-generator service is. Set to `http://event-generator:8000` in `docker-compose.yml` (Docker's internal DNS + in-container port, not the host-mapped `8006`). `driver.py` uses this via `event_client.subscribe(...)`. |
 | `CUSTOMER_AGENT_EVENT_TAGS` | `customer` (`driver.py`'s default) | Comma-separated event-generator tags the autonomous driver reacts to. The generator emits `customer` and `press` in both its scripted and LLM-generated modes; only `customer` is subscribed by default, and an unrecognised tag here means the driver connects and then silently receives nothing. |
+| `CUSTOMER_LLM_ENGINE` / `CUSTOMER_LLM_MODEL` / `CUSTOMER_LLM_BASE_URL` / `CUSTOMER_LLM_API_KEY` | unset (= NIM + `meta/llama-3.1-8b-instruct`, as committed in `guardrails_config/config.yml`) | Repoints the decision model at any OpenAI-compatible endpoint without editing the guardrails config -- `register.py`'s `_apply_llm_overrides` patches the loaded `RailsConfig`. Exists so a NIM outage doesn't stop the customer half of the simulation; see the "NIM outage escape hatch" block in the repo-root `.env`. Unset variables change nothing. |
+| `CUSTOMER_AGENT_VERBOSE` | `false` | `true` restores Colang's per-event INFO logging (~60 lines per persona per event). Off by default so `docker compose logs customer-agent` shows one line per persona: `persona=... action=... ticket=... post=...`. |
+
+### When the model provider is down
+
+The rails carry an explicit `timeout`/`max_retries` (`guardrails_config/config.yml`)
+because the defaults are a 300s read timeout with 2 retries: a degraded endpoint
+would hold each persona for ~15 minutes, and `driver.py` reacts one persona at a
+time, so the simulation would look dead rather than broken. With the timeouts, a
+failing provider produces one line per persona —
+`persona=... got no decision: ... the model provider did not answer` — within
+~90s, and the driver moves on to the next persona.
 
 ## Running with Docker Compose (recommended)
 

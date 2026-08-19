@@ -21,6 +21,7 @@ by persona_id. See the note at the bottom about upgrading this later.
 """
 import json
 import logging
+import os
 
 from pydantic import Field
 from nat.builder.builder import Builder
@@ -29,6 +30,7 @@ from nat.cli.register_workflow import register_function
 from nat.data_models.function import FunctionBaseConfig
 
 from nemoguardrails import LLMRails, RailsConfig
+from nemoguardrails.rails.llm.config import Instruction
 
 import social_mcp
 from personas import get_persona
@@ -46,6 +48,66 @@ def _get_memory(persona_id: str, initial_trust: float) -> dict:
         "trust_score": initial_trust,
         "past_decisions": [],
     })
+
+
+def _install_system_prompt(rails_config: RailsConfig) -> None:
+    """
+    Puts SYSTEM_PROMPT where NeMo Guardrails actually looks for it.
+
+    The `general` task prompt is composed from the config's `instructions`
+    block plus the conversation turns -- a {"role": "system"} message handed to
+    generate_async() is silently dropped. Logging the composed prompt showed
+    only guardrails_config/config.yml's instructions and the persona JSON: the
+    output schema and the action enum never reached the model, which then
+    invented its own shape ({"event_response", "emotions", "actions"}) and got
+    blocked by the `self check output` rail. Models differ in how close they
+    guess, which made this look like a flaky model rather than a missing prompt.
+
+    Nothing else needs the instructions: prompts.yml defines both self_check
+    templates in full, so they don't interpolate general_instructions.
+    """
+    for instruction in rails_config.instructions:
+        if instruction.type != "general":
+            continue
+        if SYSTEM_PROMPT not in instruction.content:
+            instruction.content = f"{instruction.content.rstrip()}\n\n{SYSTEM_PROMPT}"
+        return
+    rails_config.instructions.append(Instruction(type="general", content=SYSTEM_PROMPT))
+
+
+def _apply_llm_overrides(rails_config: RailsConfig) -> None:
+    """
+    Lets the root .env repoint the decision model without editing
+    guardrails_config/config.yml -- the point being that when NIM's chat
+    endpoint is degraded, the whole customer half of the simulation can be
+    moved to any OpenAI-compatible endpoint by uncommenting four env vars.
+    Unset vars change nothing, so the committed default stays NIM.
+    """
+    engine = os.environ.get("CUSTOMER_LLM_ENGINE")
+    model = os.environ.get("CUSTOMER_LLM_MODEL")
+    base_url = os.environ.get("CUSTOMER_LLM_BASE_URL")
+    api_key = os.environ.get("CUSTOMER_LLM_API_KEY")
+    if not any((engine, model, base_url, api_key)):
+        return
+
+    for entry in rails_config.models:
+        if entry.type != "main":
+            continue
+        if engine:
+            entry.engine = engine
+        if model:
+            entry.model = model
+        # base_url/api_key ride along in `parameters`, which the framework
+        # forwards to the OpenAI-compatible client (see its create_model).
+        if base_url or api_key:
+            params = dict(entry.parameters or {})
+            if base_url:
+                params["base_url"] = base_url
+            if api_key:
+                params["api_key"] = api_key
+            entry.parameters = params
+        logger.info("LLM override active: engine=%s model=%s base_url=%s",
+                    entry.engine, entry.model, base_url or "<default>")
 
 
 def _parse_decision(raw_text: str) -> dict:
@@ -91,6 +153,8 @@ async def customer_agent_decision(config: CustomerAgentDecisionConfig, builder: 
     create_ticket_fn = accessible_fns[config.create_ticket_tool_name]
 
     rails_config = RailsConfig.from_path(config.guardrails_config_path)
+    _install_system_prompt(rails_config)
+    _apply_llm_overrides(rails_config)
     rails = LLMRails(rails_config)
 
     async def _decide_and_act(persona_id: str, event: str) -> dict:
@@ -104,8 +168,10 @@ async def customer_agent_decision(config: CustomerAgentDecisionConfig, builder: 
             "memory": memory,
         }, indent=2)
 
+        # No {"role": "system"} turn here on purpose -- guardrails drops it.
+        # SYSTEM_PROMPT is installed into the config's general instructions
+        # instead; see _install_system_prompt above.
         response = await rails.generate_async(messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ])
 

@@ -44,12 +44,45 @@ def _event_tags() -> tuple[str, ...]:
     return tuple(tag.strip() for tag in raw.split(",") if tag.strip())
 
 
+def _brief(exc: BaseException) -> str:
+    """One log line instead of a 200-frame guardrails/NAT traceback."""
+    message = " ".join(f"{type(exc).__name__}: {exc}".split())
+    if len(message) > 300:
+        message = message[:300] + " ..."
+    return message
+
+
+# Substrings that mean "the model provider did not answer", as opposed to a bug
+# in our own decision code. Worth calling out, because the symptom otherwise
+# looks like a broken agent rather than a broken upstream.
+_PROVIDER_FAILURE_MARKERS = ("invoking LLM", "Timeout", "timed out", "504", "502", "429")
+
+_PROVIDER_HINT = (
+    "the model provider did not answer -- check its status page and the key in "
+    ".env; the 'NIM outage escape hatch' block there repoints this agent at "
+    "another OpenAI-compatible endpoint"
+)
+
+
 async def _react(workflow, persona_id: str, event_text: str) -> None:
     try:
         async with workflow.run({"persona_id": persona_id, "event": event_text}) as runner:
             result = await runner.result(to_type=dict)
-    except Exception:
-        logger.exception("customer_agent_decision failed for persona=%s", persona_id)
+    except Exception as exc:
+        summary = _brief(exc)
+        if any(marker in summary for marker in _PROVIDER_FAILURE_MARKERS):
+            logger.error("persona=%s got no decision: %s -- %s", persona_id, summary, _PROVIDER_HINT)
+        else:
+            logger.error("persona=%s got no decision: %s", persona_id, summary)
+        # Keep the full traceback available without drowning the feed in it.
+        logger.debug("traceback for persona=%s", persona_id, exc_info=True)
+        return
+
+    # A rail refusal or unparseable model output arrives as a normal result with
+    # `error` set. Say so instead of logging "action=None", which reads like the
+    # persona chose to do nothing.
+    if result.get("error"):
+        logger.warning("persona=%s produced no usable decision: %s", persona_id, result["error"])
         return
 
     decision = result.get("decision") or {}

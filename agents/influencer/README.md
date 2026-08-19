@@ -112,11 +112,17 @@ nat run --config_file configs/config.nim.yml --input \
 
 ## Switching LLM provider
 
-Two config files are provided; only one field differs (the `llms:` block) between them:
+Three config files are provided; only the `llms:` block differs between them:
 
 - `configs/config.nim.yml` (default) — NVIDIA NIM, needs `NVIDIA_API_KEY`.
 - `configs/config.openai.yml` — OpenAI, needs `OPENAI_API_KEY`.
+- `configs/config.gemini.yml` — Gemini through its OpenAI-compatible endpoint,
+  needs `GEMINI_API_KEY`. This is the fallback for when NIM's shared chat
+  endpoint is degraded (see the root README's "When an agent isn't reacting").
 
-Select one via `NAT_CONFIG_FILE` (see `docker-compose.yml` / the env vars table below).
+Select one via `NAT_CONFIG_FILE`, e.g. `NAT_CONFIG_FILE=configs/config.gemini.yml`
+in the repo-root `.env`, then `docker compose up -d influencer-agent`. Nothing
+outside the `llms:` block changes — the decision function and the poller never
+name a provider.
 
 

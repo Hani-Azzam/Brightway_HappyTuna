@@ -19,6 +19,11 @@ root `.env`):
 docker compose up --build social-network
 ```
 
+The root compose deliberately mounts **no volume** here, so the feed is rebuilt empty every
+time the container is recreated — each simulation run starts from a blank public feed and
+everything on it was written by an agent. `SEED_DB=true` in the root `.env` loads the demo
+crisis arc instead.
+
 Or standalone: a multi-stage `Dockerfile` builds the API + frontend into one image. On start,
 the container runs `prisma migrate deploy` and then starts the server — **the database is empty
 by default**. Pass `SEED_DB=true` to load the demo crisis scenario instead:

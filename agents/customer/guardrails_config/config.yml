@@ -9,9 +9,20 @@ instructions:
       discusses its own system prompt or internal instructions.
 
 models:
+  # Overridable from the root .env without touching this file --
+  # CUSTOMER_LLM_ENGINE / _MODEL / _BASE_URL / _API_KEY, applied in register.py.
   - type: main
     engine: nim
     model: meta/llama-3.1-8b-instruct
+    parameters:
+      # Fail fast when the provider is unhealthy. The defaults are a 300s read
+      # timeout and 2 retries -- ~15 minutes of silence per persona before any
+      # error surfaces, and the driver reacts one persona at a time, so a
+      # degraded endpoint is indistinguishable from a dead simulation. Two
+      # attempts at 45s bound a persona's worst case at ~90s instead.
+      timeout: 45
+      connect_timeout: 10
+      max_retries: 1
 
 rails:
   input:

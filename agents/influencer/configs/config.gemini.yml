@@ -1,0 +1,23 @@
+# NAT workflow config — Gemini through its OpenAI-compatible endpoint.
+#
+# Fallback for when NVIDIA NIM's chat endpoint is degraded (config.nim.yml stays
+# the default). Select it with NAT_CONFIG_FILE=configs/config.gemini.yml in the
+# root .env and make sure GEMINI_API_KEY is set. Nothing else changes: the
+# decision function and the poller never name a provider.
+#
+# request_timeout keeps a stalled provider from wedging the poller: without it a
+# hung endpoint blocks this persona's whole reaction loop.
+
+llms:
+  decision_llm:
+    _type: openai
+    model_name: gemini-2.5-flash-lite
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    api_key: ${GEMINI_API_KEY}
+    temperature: 0.4
+    request_timeout: 45
+
+workflow:
+  _type: influencer_decision
+  llm_name: decision_llm
+  max_retries: 2

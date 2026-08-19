@@ -89,6 +89,25 @@ flowchart TB
 | Event generator | NVIDIA NIM · `meta/llama-3.1-8b-instruct` | optional LLM feed mode |
 | Social network analytics | Anthropic · `claude-haiku-4-5` | optional AI sentiment (off by default) |
 
+Each agent's provider is swappable without touching its logic: the customer
+agent through `CUSTOMER_LLM_*` in `.env` (patched into the guardrails config at
+load time), the influencer through `NAT_CONFIG_FILE` (one of three `configs/`
+files). This exists because the two NIM agents share a single upstream — when
+build.nvidia.com's chat endpoint degrades, both go down together while the
+Gemini and Anthropic agents keep running.
+
+## State: what a run starts from
+
+| Store | Lives in | Reset by |
+|---|---|---|
+| Social feed (BrightTweets) | the container's own filesystem | any recreate of `social-network` — every run starts from an empty feed |
+| Influencer feed cursors | the container's own filesystem | any recreate — the ids only mean something to one social DB |
+| Tickets, articles, chat history, CEO memory | named volumes | `docker compose down -v` |
+
+The public feed is deliberately the volatile one: it is the simulation's visible
+output, so a run should start blank and contain only what the agents wrote.
+`SEED_DB=true` loads the demo crisis arc instead.
+
 ## Isolation rules (inherited from the original research design)
 
 - **No privileged access:** no agent sees another agent's internal state,

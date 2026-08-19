@@ -69,15 +69,23 @@ class InfluencerPoller:
 
     async def _fetch_new_posts(self) -> list[dict]:
         """Walks the newest-first feed until it hits the last post this persona already saw."""
-        last_seen_post_id = self._cursor.load_last_seen_post_id()
-
-        if last_seen_post_id is None:
+        if not self._cursor.is_baselined():
             # First run ever for this persona: don't react to the entire existing backlog,
             # just record the current newest post as the baseline and react from here on.
             first_page = await self._social.get_feed_page(page=1, limit=self._feed_page_size)
             if first_page:
                 self._cursor.save_last_seen_post_id(first_page[0]["id"])
+            else:
+                # Empty feed -- the normal start of a simulation run, since the social
+                # network is rebuilt empty. There is no backlog to skip here, so baseline
+                # without an id: that way the first post someone writes is reacted to
+                # instead of becoming this persona's "already seen" marker.
+                self._cursor.baseline_on_empty_feed()
             return []
+
+        # None here means "baselined against an empty feed", so the walk below never
+        # matches and correctly treats everything currently in the feed as new.
+        last_seen_post_id = self._cursor.load_last_seen_post_id()
 
         new_posts: list[dict] = []
         page = 1

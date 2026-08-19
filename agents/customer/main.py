@@ -26,6 +26,18 @@ import driver
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("customer_agent.main")
 
+# Colang's runtime logs every internal event it processes at INFO -- roughly 60
+# lines per persona per event, which buries the one line that says what the
+# customer actually decided. Raise it to WARNING so `docker compose logs
+# customer-agent` is readable; set CUSTOMER_AGENT_VERBOSE=true to get it back
+# when debugging the rails themselves.
+if os.environ.get("CUSTOMER_AGENT_VERBOSE", "").lower() not in ("1", "true", "yes"):
+    logging.getLogger("nemoguardrails.colang").setLevel(logging.WARNING)
+    logging.getLogger("nemoguardrails.actions").setLevel(logging.WARNING)
+    # llmrails logs the provider failure with a full traceback and then re-raises
+    # it to driver.py, which reports it as a single line. Keep the single line.
+    logging.getLogger("nemoguardrails.rails.llm.llmrails").setLevel(logging.CRITICAL)
+
 
 async def _run_nat_mcp_serve(host: str, port: int) -> asyncio.subprocess.Process:
     return await asyncio.create_subprocess_exec(

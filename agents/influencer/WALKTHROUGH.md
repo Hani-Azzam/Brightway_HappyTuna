@@ -143,8 +143,15 @@ paging the global feed, posting a comment, reposting. Unwraps social_network's
 
 ### `influencer-agent/src/influencer_agent/state.py`
 `PersonaCursor` — persists "last seen post id" to a JSON file per persona
-(`STATE_DIR/<handle>.json`), so restarts don't re-react to old posts. Backed by a Docker
-named volume (`influencer_agent_state`) in production.
+(`STATE_DIR/<handle>.json`), so restarts don't re-react to old posts. It also records
+*that* a baseline was taken (`baselined`), separately from the id: a simulation run
+starts against an empty social feed, where there is no backlog to skip and no id to
+remember, and without that distinction the first post of the run would be mistaken for
+a one-post backlog and skipped.
+
+These ids only mean something to one social-network database, so the root
+`docker-compose.yml` deliberately gives `STATE_DIR` **no** volume — the cursors are
+recreated with the feed they point into.
 
 ### `influencer-agent/src/influencer_agent/nat_client.py`
 The poller's HTTP client for the *local* NAT workflow server: `POST /generate` with a
