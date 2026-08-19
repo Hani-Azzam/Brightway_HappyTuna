@@ -1,7 +1,7 @@
 # Event Generator
 
-Fires crisis events into the HappyTuna simulation. Team 3 owns this outright — no other team
-controls when events fire (see the repo-root [`PROJECT_README.md`](../PROJECT_README.md) §4).
+Fires crisis events into the HappyTuna simulation — the single source of truth for when
+crisis events happen (see [`docs/architecture.md`](../docs/architecture.md) for the big picture).
 
 It runs as its own container and fans events out to subscribers over HTTP, so the agents that
 react to a crisis can live in completely separate services.
@@ -14,7 +14,7 @@ react to a crisis can live in completely separate services.
                         ┌──────────────────── container ────────────────────┐
                         │                                                   │
   POST /replay ────────►│  event_generator.py                               │
-   (scripted feed)      │    CRISIS_FEED  ── 5 briefings, Day 1 → Day 10    │
+   (scripted feed)      │    CRISIS_FEED  ── scripted crisis, 6 stages    │
                         │        │                                          │
                         │        ▼                                          │
   POST /emit ──────────►│  _Sequencer     stamps seq + ts once per event    │

@@ -29,15 +29,16 @@ responsibilities only meet over one local HTTP call (`POST /generate`), so "deci
 
 Two layers, merged at startup by `persona.py`:
 
-1. **Base template** — `../docs/influencer_persona_prompt.md` (Week 2). Shared by every
-   influencer persona: role, objectives, decision process, constraints.
+1. **Base template** — `docs/influencer_persona_prompt.md` (shipped inside this
+   directory and baked into the image). Shared by every influencer persona: role,
+   objectives, decision process, constraints.
 2. **Persona instance** — `personas/<name>.yaml`. This bot's concrete identity and
-   attribute values (see `../docs/persona_attributes.md` for the attribute schema):
+   attribute values (see `../../docs/persona_attributes.md` for the attribute schema):
    `audience_size`, `influence_level`, `credibility`, `sensationalism`,
    `controversy_seeking`, `brand_support`, `viral_probability`.
 
-Only `personas/brand_supporter.yaml` exists so far (one of the three archetypes named in
-the team's `PROJECT_README.md` — consumer-rights and sensational are natural next additions:
+Only `personas/brand_supporter.yaml` exists so far (one of the three archetypes in the
+original design — consumer-rights and sensational are natural next additions:
 copy `brand_supporter.yaml`, adjust the attributes, and point `PERSONA_FILE` at the new file).
 
 The base template's own "Output Format" example (`action`/`tone`/`post`/`credibility_score`/...)
@@ -77,11 +78,10 @@ cp .env.example .env   # fill in NVIDIA_API_KEY (or OPENAI_API_KEY, see below)
 docker compose up --build social-network influencer-agent
 ```
 
-This also builds `social-network` (added to `docker-compose.yml` alongside this service) so
-the two talk to each other over the Docker network at `http://social-network:3000` — no
-manual wiring needed. `docs/` is mounted read-only into the container (the build context is
-this directory, which can't reach the repo-root `docs/` folder at build time); persona
-"last seen post" cursors persist in the `influencer_agent_state` named volume.
+This also builds `social-network` so the two talk to each other over the Docker network at
+`http://social-network:3000` — no manual wiring needed. The persona base template ships
+inside the image (`docs/` in this directory); persona "last seen post" cursors persist in
+the `influencer_state` named volume.
 
 Swagger UI for the NAT workflow itself (useful for testing a decision in isolation) is at
 `http://localhost:8002/docs` once the container is up.
@@ -89,17 +89,19 @@ Swagger UI for the NAT workflow itself (useful for testing a decision in isolati
 ## Running locally without Docker
 
 ```bash
-cd influencer-agent
+cd agents/influencer
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate
 pip install -e .
 export NVIDIA_API_KEY=...                        # https://build.nvidia.com
-export SOCIAL_NETWORK_BASE_URL=http://localhost:3000
-export BASE_PERSONA_TEMPLATE_PATH=../docs/influencer_persona_prompt.md
+export SOCIAL_NETWORK_BASE_URL=http://localhost:3005
+export BASE_PERSONA_TEMPLATE_PATH=./docs/influencer_persona_prompt.md
 export STATE_DIR=./state
 python -m influencer_agent.main
 ```
 
-(`social_network` must already be running separately, e.g. `npm run dev` in that folder.)
+(The social network must already be running separately — `docker compose up -d
+social-network` from the repo root, or `npm run dev` in `platforms/social-network`,
+in which case use port 3000.)
 
 To exercise just the NAT workflow — no social_network, no poller — with a single post:
 

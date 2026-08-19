@@ -1,32 +1,42 @@
 # CEO Agent — MCP Gateway
 
-Connects to the four MCP servers the other teams run (Customer Support, Social
-Network, Social Analytics, Internal Chat) and exposes a filtered tool set per
-role. It injects the caller's identity server-side, holds back every write in dry
-run, and audits every call. It makes no decisions — the loop, prompts, and model
-are yours.
+The CEO agent and its MCP gateway. The gateway connects to the four MCP servers
+the platforms run (Customer Support, Social Network, Social Analytics, Internal
+Chat) and exposes a filtered tool set per role. It injects the caller's identity
+server-side, holds back every write in dry run, and audits every call. On top of
+it sit the plan-solve agent (`agents/CEO_Agent.py`), sliding-window memory
+(`services/memory.py`), and the container driver (`autopilot.py`).
 
-## Setup
+**Start here for the big picture:** [`docs/ceo-agent.md`](../../docs/ceo-agent.md)
+(architecture, cycle and memory diagrams). This README covers the gateway layer.
+
+## Running
+
+As part of the stack (recommended — this is what the container does):
 
 ```bash
-# macOS ships python3, not python
-cp social_network/.env.example social_network/.env      # compose fails without it
-
-# The chat server lives in the bitrix-internal-actors stack, not this one. Bring
-# it up first: our compose joins its network as external, and a missing external
-# network is a hard compose failure, not a warning.
-docker compose -f ../bitrix-internal-actors/docker-compose.yml up -d
-docker compose up -d social-network customer-support-mcp
-
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r ceo_agent/requirements.txt
-
-pytest                                          # 62 passed, 4 deselected
-python3 ceo_agent/cli.py check --profile local  # 4/4 connected, 30 visible
+# from the repo root; .env needs GEMINI_API_KEY
+docker compose up --build ceo-agent
+docker compose logs -f ceo-agent
 ```
 
-`Customer_Support_System/requirements.txt` must pin `mcp==1.29.0`. Unpinned, pip
-installs 2.0.0 and their container crashes on startup.
+Host-run, against the composed platforms:
+
+```bash
+# platforms up first
+docker compose up -d social-network customer-support-mcp internal-chat-mcp event-generator
+
+cd agents/ceo
+python -m venv .venv && source .venv/bin/activate      # or .venv\Scripts\activate
+pip install -r requirements.txt
+
+pytest tests/test_unit.py                    # no network, no Docker
+python cli.py check --profile local          # 4/4 connected, 30 visible
+python main.py                               # one-shot behavioral scenario
+```
+
+`platforms/customer-support/requirements.txt` must keep `mcp<2`. On 2.0, pip
+installs a client-incompatible SDK and their container crashes on startup.
 
 ## Usage
 
@@ -114,11 +124,12 @@ one just leaves it hidden. Update `RECORDED_*` in `tests/test_integration.py`.
 ## Commands
 
 ```bash
-python3 ceo_agent/cli.py check --profile local       # connect, catalogue, policy summary
-python3 ceo_agent/cli.py dump  --profile local       # the surface, as the model sees it (--all, --json)
-pytest ceo_agent/tests/test_unit.py                  # no network, no Docker
-pytest ceo_agent/tests/test_integration.py           # needs the servers; skips cleanly if down
-pytest -m smoke -s                                   # call all 24 read tools once, print the table
+# from agents/ceo/
+python cli.py check --profile local       # connect, catalogue, policy summary
+python cli.py dump  --profile local       # the surface, as the model sees it (--all, --json)
+pytest tests/test_unit.py                 # no network, no Docker
+pytest tests/test_integration.py          # needs the servers; skips cleanly if down
+pytest -m smoke -s                        # call all read tools once, print the table
 ```
 
 ## Gotchas
@@ -137,12 +148,13 @@ pytest -m smoke -s                                   # call all 24 read tools on
   exposes no `delete_channel` and no `remove_member`, so every `create_channel` and
   `add_member` is permanent. Same shape of problem as the ticket rows above, on a
   different server — but worse, because the CEO can reach these itself rather than
-  only the harness. Reset the `bitrix-internal-actors` stack between trials, or
-  trial N starts with N-1 incident channels left over.
+  only the harness. Reset the chat volume between trials
+  (`docker compose down -v` resets every platform), or trial N starts with N-1
+  incident channels left over.
 - A whole-server allow (`analytics.*`) sweeps in that server's writes. The explicit
   `deny` entries in `roles.yaml` are load-bearing — deleting one silently grants
   operator powers.
 - `streamablehttp_client` is deprecated in mcp 1.29.0 and gone in 2.0. Migrating
   means owning an `httpx.AsyncClient` to keep per-server timeouts.
 - `ENUM_INJECTIONS` in `router.py` hand-copies
-  `Customer_Support_System/models.py:7-34`; nothing fails if they add a member.
+  `platforms/customer-support/models.py:7-34`; nothing fails if they add a member.

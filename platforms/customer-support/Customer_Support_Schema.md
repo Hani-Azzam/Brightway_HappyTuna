@@ -49,7 +49,7 @@ This activity log table is intentionally generic (`entity_type` + `entity_id`) s
 | `linked_product_batch` | string \| null | no | batch/lot number if relevant; null otherwise |
 | `sentiment` | enum \| null | no | `angry`, `frustrated`, `neutral`, `positive`; null if not yet scored |
 | `sentiment_method` | string \| null | no | which scorer produced it, e.g. `keyword_v1` — lets you swap scorers later and know which tickets used which version |
-| `assignee` | string \| null | no | id of the COO/employee agent who owns this ticket; null until assigned |
+| `assignee` | string \| null | no | id of the employee/CEO agent who owns this ticket; null until assigned |
 | `reply_message` | string \| null | no | most recent reply sent to the customer; null until a reply exists |
 | `schema_version` | integer | yes | starts at `1`; bump if you ever change the shape of this object |
 
@@ -94,7 +94,7 @@ This is the field your Event Generator and routing logic should treat as a deter
   "entity_id": "TCK-00231",
   "activity_type": "status_changed",
   "timestamp": "2026-06-23T11:02:00Z",
-  "actor": "COO-1",
+  "actor": "EMP-QA-17",
   "details": {
     "from": "open",
     "to": "in_progress"
@@ -123,7 +123,7 @@ This is the field your Event Generator and routing logic should treat as a deter
 | `created` | ticket filed | `{}` |
 | `status_changed` | status field updated | `{ "from": "open", "to": "escalated" }` |
 | `priority_changed` | priority updated | `{ "from": "medium", "to": "critical" }` |
-| `assigned` | a COO/employee agent takes ownership | `{ "assignee": "COO-1" }` |
+| `assigned` | a employee/CEO agent takes ownership | `{ "assignee": "COO-1" }` |
 | `replied` | a response sent to the customer | `{ "message": "..." }` |
 | `sentiment_scored` | sentiment field set/updated | `{ "sentiment": "angry", "method": "keyword_v1" }` |
 
@@ -152,5 +152,4 @@ That's the entire "history" feature. No separate field on the ticket, no separat
 
 ## 4. Open items for week 1 sync
 
-- Confirm with Team 2 what their internal escalation/audit activity looks like, so `actor` values (e.g. `COO-1`, `EMP-4`) and any shared `activity_type`s line up rather than each team inventing its own naming.
-- Confirm with Team 4 whether their (crisis) event engine expects a specific envelope format — if so, this ticket activity log should be able to also serve as (or feed into) that format without duplication.
+- `actor` values line up with the agent ids used across the simulation (e.g. `EMP-QA-17`, `CEO-1`), so the activity log reads coherently next to the internal chat.

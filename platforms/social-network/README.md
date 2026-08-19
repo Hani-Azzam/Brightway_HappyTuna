@@ -12,9 +12,16 @@ Identity is name-only (no passwords); responses use `{ success, data?, error? }`
 
 ## Docker Quick Start (recommended)
 
-A multi-stage `Dockerfile` builds the API + frontend into one image. On start, the container runs
-`prisma migrate deploy` and then starts the server — **the database is empty by default**. Pass
-`SEED_DB=true` to load the demo crisis scenario instead:
+As part of the whole simulation, from the repo root (`SEED_DB` and the rest come from the
+root `.env`):
+
+```bash
+docker compose up --build social-network
+```
+
+Or standalone: a multi-stage `Dockerfile` builds the API + frontend into one image. On start,
+the container runs `prisma migrate deploy` and then starts the server — **the database is empty
+by default**. Pass `SEED_DB=true` to load the demo crisis scenario instead:
 
 ```bash
 docker build -t brighttweets .
@@ -57,7 +64,7 @@ bind-mount source can get created as an empty directory instead by Docker.
 
 ```bash
 npm install
-cp .env.example .env            # ANTHROPIC_API_KEY optional (analytics fall back to a lexicon)
+cp ../../.env .env              # local copy of the repo-root env (dotenv reads ./.env in dev)
 npm run prisma:migrate          # create the SQLite database
 npm run seed                    # load the demo crisis scenario
 npm run dev                     # API on http://localhost:3000
@@ -106,7 +113,7 @@ MCP tool error. Implementation lives in [`src/mcp/`](./src/mcp/). Point the
 
 ## Configuration
 
-All env vars go through `src/config.ts` (see `.env.example`). Notably the company under study is
+All env vars go through `src/config.ts` (see the repo-root `.env.example`). Notably the company under study is
 **config-driven** — set `COMPANY_NAME` (and optional `COMPANY_ALIASES`); detection and every UI label
 follow it. `PLATFORM_NAME` sets this product's own name.
 

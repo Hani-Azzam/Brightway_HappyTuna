@@ -39,10 +39,14 @@ system's tools). `main.py` runs both entry points at once, in one container:
        event isn't a jailbreak, output rail checks the JSON is well-formed
        and the response stays in character
     3. if the decision is "open_support_ticket", calls the MCP-discovered
-       create_ticket tool
-        |
-        v
-customer-support-mcp (../Customer_Support_System)  --  real SQLite-backed tickets
+       create_ticket tool; if it is "complain_on_social_media" or
+       "recommend_company", publishes a real post over the social network's
+       MCP server (social_mcp.py), logged in as this persona
+        |                                   |
+        v                                   v
+customer-support-mcp                social-network /mcp/social
+(../../platforms/customer-support)  (../../platforms/social-network)
+real SQLite-backed tickets          real public posts on BrightTweets
 ```
 
 There is currently **no** REST endpoint (`/generate`, `/docs`, etc.) — that's a deliberate
@@ -64,7 +68,7 @@ separate OS process, the other is `load_workflow` in `main.py`'s process), so th
 | `guardrails_config/config.yml`, `prompts.yml` | NeMo Guardrails config: which model to use (NIM), and the input/output check prompts (blocks jailbreaks, off-topic input, malformed output, and character breaks). |
 | `workflow.yml` | NAT's workflow config: wires the `customer_support` MCP function group (the real Customer Support MCP server) to the `customer_agent_decision` function. |
 | `pyproject.toml` | Makes this an installable package and registers `register.py` with NAT's plugin discovery via `[project.entry-points."nat.components"]` -- required for `nat mcp serve` to find it at all. |
-| `event_client.py` | Copied verbatim from `../event-generator/event_client.py` (that service's own README recommends copying, not importing, so each consumer owns its transport code). `subscribe(*tags)` opens an SSE stream to the event-generator with auto-reconnect. |
+| `event_client.py` | Copied verbatim from `../../event-generator/event_client.py` (that service's own README recommends copying, not importing, so each consumer owns its transport code). `subscribe(*tags)` opens an SSE stream to the event-generator with auto-reconnect. |
 | `driver.py` | The autonomous loop: subscribes to the event-generator via `event_client.subscribe("customer")`, and for every event, calls `customer_agent_decision` once per persona, sequentially (not gathered -- kinder to NIM rate limits and avoids concurrent writes to `register.py`'s `_memory` dict). Drives the workflow in-process via `nat.runtime.loader.load_workflow`, the same way `test_workflow.py` does, rather than looping back through `nat mcp serve` over the network. |
 | `main.py` | Container entrypoint. Starts `nat mcp serve` as a subprocess (on-demand path) and runs `driver.py`'s loop in this process (autonomous path) side by side. Mirrors `../influencer-agent/src/influencer_agent/main.py`'s shape (NAT front end as a subprocess, driving loop in-process). |
 | `Dockerfile` | `python:3.11-slim`, `pip install .` (not `-r requirements.txt` -- see above), then `python main.py`. |
@@ -110,6 +114,7 @@ untrusted `event` input and that real system.
 |---|---|---|
 | `NVIDIA_API_KEY` | — | **Required.** Used by NeMo Guardrails' NIM engine (`guardrails_config/config.yml`) to actually call the model. Get one at https://build.nvidia.com. Set it in the repo-root `.env` (shared by every service via `env_file: .env` in `docker-compose.yml`). |
 | `CUSTOMER_SUPPORT_MCP_URL` | `http://customer-support-mcp:8010/mcp` | Where the real Customer Support MCP server is. The default assumes Docker Compose's internal DNS; override to `http://localhost:8010/mcp` when running this service outside Docker against a Dockerized Customer Support system. |
+| `SOCIAL_NETWORK_MCP_URL` | `http://social-network:3000/mcp/social` | The social network's participation MCP server, used by `social_mcp.py` to publish a persona's public posts. Override to `http://localhost:3005/mcp/social` off-compose. |
 | `PERSONAS_CONFIG_PATH` | `/app/personas.yaml` (set in the Dockerfile) | Where `personas.py` reads persona data from. Needed explicitly because once this package is `pip install`-ed (not run as loose script files), `personas.py`'s own directory is inside `site-packages`, not `/app` -- see "Testing" below. |
 | `EVENT_GENERATOR_URL` | `http://localhost:8006` (`event_client.py`'s default) | Where the event-generator service is. Set to `http://event-generator:8000` in `docker-compose.yml` (Docker's internal DNS + in-container port, not the host-mapped `8006`). `driver.py` uses this via `event_client.subscribe(...)`. |
 | `CUSTOMER_AGENT_EVENT_TAGS` | `customer` (`driver.py`'s default) | Comma-separated event-generator tags the autonomous driver reacts to. The generator emits `customer` and `press` in both its scripted and LLM-generated modes; only `customer` is subscribed by default, and an unrecognised tag here means the driver connects and then silently receives nothing. |
@@ -120,7 +125,7 @@ From the repo root:
 
 ```bash
 cp .env.example .env   # fill in NVIDIA_API_KEY, once
-docker compose up --build -d event-generator customer-support-mcp customer-support-api customer-agent
+docker compose up --build -d event-generator customer-support-mcp customer-support-api social-network customer-agent
 ```
 
 (Drop `--build` on later runs if none of the source files changed -- Compose will reuse the
@@ -131,7 +136,7 @@ can take upwards of 30 minutes from a cold Docker build cache.)
 This starts everything `customer-agent` needs:
 
 - **`event-generator`** -- the crisis-feed service `driver.py` subscribes to. See
-  `../event-generator/README.md`.
+  `../../event-generator/README.md`.
 - **`customer-support-mcp`** + **`customer-support-api`** -- the real ticketing system this
   agent files tickets into, over MCP.
 - **`customer-agent`** -- this service. Its container runs `python main.py`, which starts both
@@ -139,8 +144,8 @@ This starts everything `customer-agent` needs:
   event loop (autonomous path) -- see "Architecture" above. You don't need to call anything for
   the autonomous path to work; once the container is up, it's already listening.
 
-To see it react: fire the scripted 5-event crisis feed at the event-generator, then watch this
-service's logs:
+To see it react: fire the scripted crisis feed at the event-generator (12 events, 6 tagged
+`customer`), then watch this service's logs:
 
 ```bash
 curl -X POST "http://localhost:8006/replay?delay=2.0"
@@ -148,10 +153,11 @@ docker compose logs -f customer-agent
 ```
 
 Each persona's decision shows up as a log line, e.g.
-`persona=vocal_complainer action=complain_on_social_media ticket=None`, or with a real
-`ticket=<id>` if the decision was `open_support_ticket` -- cross-check that against
-`http://localhost:8003/tickets` (the Customer Support API) to confirm it's a real row, not just
-a logged intent.
+`persona=vocal_complainer action=complain_on_social_media ticket=None post=<id>`, with a real
+`ticket=<id>` when the decision was `open_support_ticket` and a real `post=<id>` when it was a
+public complaint or recommendation. Cross-check tickets at `http://localhost:8003/tickets`
+(Customer Support API) and posts at `http://localhost:3005/app/` (BrightTweets) to confirm they
+are real rows, not just logged intents.
 
 ### Calling it directly
 
@@ -183,16 +189,17 @@ inside the container itself, it's `8000`.)
 ## Running locally without Docker
 
 ```bash
-cd customer-agent
+cd agents/customer
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate
 pip install -e .
 export NVIDIA_API_KEY=...                         # https://build.nvidia.com
 export CUSTOMER_SUPPORT_MCP_URL=http://localhost:8010/mcp
+export SOCIAL_NETWORK_MCP_URL=http://localhost:3005/mcp/social
 nat mcp serve --config_file workflow.yml --host 0.0.0.0 --port 8000 --tool_names customer_agent_react
 ```
 
 (The Customer Support MCP server must already be running separately -- see
-`../Customer_Support_System/README.md`.)
+`../../platforms/customer-support/README.md`.)
 
 ## Testing
 
@@ -238,7 +245,8 @@ docker exec customer-agent python /tmp/test.py
 - Only `customer_agent_react` is exposed via MCP (`--tool_names` in the Dockerfile). The
   Customer Support tools this agent consumes internally are deliberately **not** re-exposed --
   they're already served directly by `customer-support-mcp`.
-- **`ceo_agent` doesn't call this service.** Per `../ceo_agent/README.md`, this agent "is not in
-  the registry at all." Nothing currently closes the loop where a CEO statement becomes a new
-  event-generator event that customer personas react to -- that's a `ceo_agent`-side gap, not
-  something to fix here.
+- **The CEO agent doesn't call this service, on purpose.** Per `../ceo/README.md`, this agent
+  "is not in the registry at all" -- its one tool invents a customer AND files a real ticket,
+  so a CEO able to call it would be manufacturing the public it is evaluated on. (The CEO's
+  public statements still reach the personas indirectly: they land on the social network, where
+  customers and the influencer read and react to them.)

@@ -12,7 +12,7 @@ This service is part of the project-wide `docker-compose.yml` at the repo root. 
 docker compose up --build
 ```
 
-This builds and starts every team's service at once, including this one. See the root `PROJECT_README.md` for the full picture.
+This builds and starts the whole simulation at once, including this service. See the root `README.md` and `docs/architecture.md` for the full picture.
 
 To rebuild just this service after changing code, without rebuilding everything else:
 
@@ -27,8 +27,8 @@ This service is actually two separate containers:
 
 | | Location | What it does |
 |---|---|---|
-| **API** | `Customer_Support_System/Dockerfile` | Python container running the FastAPI backend (`main.py`) — serves the ticket endpoints |
-| **Dashboard** | `Customer_Support_System/cs-monitor/Dockerfile` | Node container that builds the React dashboard into static files, then serves them |
+| **API** | `platforms/customer-support/Dockerfile` | Python container running the FastAPI backend (`main.py`) — serves the ticket endpoints |
+| **Dashboard** | `platforms/customer-support/cs-monitor/Dockerfile` | Node container that builds the React dashboard into static files, then serves them |
 
 They're separate because they need completely different environments (Python vs. Node) — one Dockerfile can't sensibly do both. The dashboard's container runs `npm run build` once, then serves the compiled static site; it isn't running a dev server inside Docker.
 
@@ -49,14 +49,14 @@ Useful for quick iteration without rebuilding containers.
 
 **Terminal 1 — API:**
 ```bash
-cd Customer_Support_System
+cd platforms/customer-support
 pip install -r requirements.txt
 uvicorn main:app --port 8003 --reload
 ```
 
 **Terminal 2 — Dashboard:**
 ```bash
-cd Customer_Support_System/cs-monitor
+cd platforms/customer-support/cs-monitor
 npm install
 npm run dev
 ```
@@ -73,7 +73,7 @@ The API allows requests from `http://localhost:5173` via `CORSMiddleware` in `ma
 
 ## MCP server (for agents)
 
-Alongside the REST API, this service also exposes an **MCP server** (`mcp_server.py`) — the same underlying operations, but as MCP tools instead of HTTP endpoints. This is what agents (Customer, Influencer, COO, etc.) should use to interact with Customer Support, rather than making raw HTTP calls.
+Alongside the REST API, this service also exposes an **MCP server** (`mcp_server.py`) — the same underlying operations, but as MCP tools instead of HTTP endpoints. This is what agents (Customer, Employee, CEO, etc.) should use to interact with Customer Support, rather than making raw HTTP calls.
 
 Both the REST API and the MCP server call the same `storage.py` functions and share the same SQLite database — a ticket created via an MCP tool call shows up in the dashboard immediately, and vice versa. Verified safe for concurrent use from separate containers (tested with 5 simultaneous processes writing to the same database file with zero collisions or corruption).
 
@@ -127,7 +127,7 @@ docker compose up --build customer-support-mcp
 
 Locally without Docker:
 ```bash
-cd Customer_Support_System
+cd platforms/customer-support
 pip install -r requirements.txt
 python mcp_server.py
 ```
@@ -182,7 +182,7 @@ curl -s -X PATCH http://localhost:8003/tickets/TCK-00001 \
   -H "Content-Type: application/json" \
   -d '{
     "status": "in_progress",
-    "actor": "COO-1"
+    "actor": "EMP-QA-17"
   }' | python -m json.tool
 ```
 
@@ -217,7 +217,7 @@ Example response (two entries: creation + status change):
     "entity_id": "TCK-00001",
     "activity_type": "status_changed",
     "timestamp": "2026-06-27T10:01:00.000000+00:00",
-    "actor": "COO-1",
+    "actor": "EMP-QA-17",
     "details": {
       "from": "open",
       "to": "in_progress"
@@ -254,7 +254,7 @@ log entry per changed field:
 | `status`        | `status_changed`  | `{"from": "open", "to": "in_progress"}`              |
 | `priority`      | `priority_changed`| `{"from": "medium", "to": "critical"}`               |
 | `sentiment`     | `sentiment_scored`| `{"sentiment": "angry", "method": "keyword_v1"}`     |
-| `assignee`      | `assigned`        | `{"assignee": "COO-1"}`                              |
+| `assignee`      | `assigned`        | `{"assignee": "EMP-QA-17"}`                              |
 | `reply_message` | `replied`         | `{"message": "We are investigating your complaint."}`|
 
 Pass `"actor"` in the PATCH body to attribute the change (defaults to

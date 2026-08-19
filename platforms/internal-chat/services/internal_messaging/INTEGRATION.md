@@ -27,7 +27,7 @@ Permissions:
 | Permission | Who has it | Lets you |
 |---|---|---|
 | `chat:read` | everyone | read channels you're a member of |
-| `chat:write` | agents (employee/COO/CEO/…) | post to channels you're a member of |
+| `chat:write` | agents (employee/CEO/…) | post to channels you're a member of |
 | `chat:manage` | agents | create channels, add members |
 | `chat:system` | **only** a `coordinator`/`director` identity | read the **cross-channel firehose** (activation) |
 
@@ -50,7 +50,7 @@ Then seed at least one channel (an empty store rejects everything with `NOT_FOUN
 
 ```bash
 CHAT_DB_PATH=./data/chat.db python -m services.internal_messaging.bootstrap
-# -> creates the HT-2026-001 incident room (COO owner; EMP-QA-17 + CEO members)
+# -> creates the HT-2026-001 incident room (CEO owner; employee members)
 ```
 
 Health check: `GET /health` → `{"status":"ok"}`.
@@ -83,7 +83,7 @@ Other: `CHAT_PORT` (default `8080`), `NTP_URL` (unset → local wall clock).
 1. **A registered identity + role.** Your `agent_id` must map to a role so you get
    permissions. The roster lives in `services/internal_messaging/integration/identity.py`
    (`default_registry()`); add your id there, or have your deployment inject it. Known
-   ids today: `CEO-1` (ceo), `COO-1` (coo), `EMP-QA-17` + the employee personas
+   ids today: `CEO-1` (ceo), `EMP-QA-17` + the employee personas
    (employee), `COORD-1` (coordinator). Unknown ids fall back to a plain `employee`.
 2. **Channel membership.** You can only use channels you belong to. Either create one
    (`chat:manage`) or ask the owner to add you (`POST …/members`). The **Director** instead
@@ -121,10 +121,10 @@ Example (send + read):
 ```bash
 curl -X POST http://localhost:8085/api/channels/$CID/messages \
   -H "Authorization: Bearer EMP-QA-17" -H "Content-Type: application/json" \
-  -d '{"body":"LAB-781 POSITIVE on Line 4 @COO-1"}'
+  -d '{"body":"LAB-781 POSITIVE on Line 4 @PLANT-MGR-1"}'
 
 curl "http://localhost:8085/api/channels/$CID/messages?since=0" \
-  -H "Authorization: Bearer COO-1"
+  -H "Authorization: Bearer PLANT-MGR-1"
 ```
 
 Errors map to HTTP status: `VALIDATION`→400, `NOT_FOUND`→404, `UNAUTHORIZED`→403.
@@ -147,7 +147,7 @@ Your `mcp_core` client points at this endpoint with **no tool-code change**:
 
 ```python
 from packages.mcp_core.http_client import HttpMCPClient
-client = HttpMCPClient(http, agent_id="COO-1", base_url="http://internal-messaging:8085")
+client = HttpMCPClient(http, agent_id="CEO-1", base_url="http://internal-messaging:8085")
 result = await client.call_tool("chat.send_message", {"channel": cid, "body": "…"}, ctx)
 ```
 
@@ -160,11 +160,10 @@ schema (`MessageReceipt`) if you want typed access.
 
 | You are… | Use | Steps |
 |---|---|---|
-| **CEO (Team 1)** | MCP | Point `HttpMCPClient` at `/mcp/chat`; register `CEO-1` (ceo); be a member only of its own channels (isolation is automatic). |
-| **COO (Team 2)** | MCP | Same; your existing `chat.send_message` already matches — just set the base URL and be a channel member. |
-| **Employee (Team 2)** | REST | Use the `SendChatMessage`/`ReadChannel` adapter (identity bound as Bearer). |
-| **Any other language / system (Team 3)** | REST | Call `/api/*` with a Bearer id; `{success,data,error}`. |
-| **Director / activation (Team 4)** | firehose | Authenticate as a `coordinator` id and poll `GET /api/messages?since=<seq>` — **or** subscribe to the bus (below). |
+| **CEO** | MCP | Use the standard MCP door (`:8090/mcp`): `login(agent_id="CEO-1")`, then the chat tools — or `HttpMCPClient` at `/mcp/chat`. Isolation is automatic. |
+| **Employee** | REST | Use the `SendChatMessage` adapter (identity bound as Bearer). |
+| **Any other language / system** | REST | Call `/api/*` with a Bearer id; `{success,data,error}`. |
+| **Coordinator / activation** | firehose | Authenticate as a `coordinator` id and poll `GET /api/messages?since=<seq>` — **or** subscribe to the bus (below). |
 
 ---
 
@@ -197,8 +196,8 @@ to consume:
   deterministic under a fixed seed (build with `FixedClock` + `SeededIdFactory`).
 
 **Not this service's job (owned elsewhere)**
-- Announcements/broadcasts → Staff Portal · Audit log → Audit system · Email → BitriX Mail ·
-  Public posts → Social Network · **deciding who wakes on an event → the Director**.
+- Public posts → Social Network · news → the Journalism Site ·
+  **deciding who wakes on an event → the coordinator** (embedded in the employee worker).
 
 ---
 

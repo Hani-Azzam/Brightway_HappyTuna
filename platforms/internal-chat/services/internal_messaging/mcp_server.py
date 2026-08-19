@@ -17,9 +17,11 @@ checks live in exactly one place (`domain/service.py`).
 
 Run standalone (shares the SQLite volume with the REST container):
     MCP_PORT=8090 python -m services.internal_messaging.mcp_server
-"""
-from __future__ import annotations
 
+NOTE: no `from __future__ import annotations` here — FastMCP detects the
+Context parameter with an issubclass() check on the raw annotation, which
+breaks on postponed (string) annotations.
+"""
 import os
 import weakref
 from typing import Any, Optional

@@ -93,7 +93,7 @@ PyPI package, not guessed), plus `httpx` and `pyyaml`.
 NAT's own YAML workflow config. Each declares one LLM (`llms:`) and sets our custom
 function as the top-level `workflow:` — meaning the workflow **is** the decision function,
 not an agent that calls it as a tool. `config.nim.yml` (default) uses NVIDIA NIM
-(`meta/llama-3.3-70b-instruct`, needs `NVIDIA_API_KEY`); `config.openai.yml` is a drop-in
+(`meta/llama-3.1-8b-instruct`, needs `NVIDIA_API_KEY`); `config.openai.yml` is a drop-in
 alternative (`gpt-4o-mini`, needs `OPENAI_API_KEY`). Switching providers = picking a
 different file via `NAT_CONFIG_FILE`.
 

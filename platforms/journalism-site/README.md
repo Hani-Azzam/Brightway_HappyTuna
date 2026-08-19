@@ -10,7 +10,7 @@ Think of it as **ynet** — a public news site that exists inside the simulation
 
 - Stores and serves news articles published by the Journalist agent
 - Provides a live web UI that auto-refreshes every 15 seconds
-- Stamps every article with **simulated time** from the NTP service
+- Stamps every article with its publication time (UTC)
 - Lets other agents search and filter articles by keyword, category, or tag
 
 ---
@@ -18,8 +18,8 @@ Think of it as **ynet** — a public news site that exists inside the simulation
 ## Running locally
 
 ```bash
-# With Docker Compose (recommended — also starts NTP)
-docker compose up --build news-website ntp
+# With Docker Compose (recommended), from the repo root
+docker compose up --build journalism-site
 
 # Then open the news site in your browser
 http://localhost:8003
@@ -31,7 +31,6 @@ http://localhost:8003
 
 | Variable  | Default           | Description                       |
 | --------- | ----------------- | --------------------------------- |
-| `NTP_URL` | `http://ntp:8001` | Where to get simulated timestamps |
 | `DB_PATH` | `/data/news.db`   | SQLite database file path         |
 
 Set these in `docker-compose.yml` or your `.env` file.
@@ -146,7 +145,7 @@ Publish a new article. Called by the Journalist agent.
 }
 ```
 
-> The `published_at` timestamp is automatically pulled from the NTP service — agents do not need to supply it.
+> The `published_at` timestamp is set automatically by the server — agents do not need to supply it.
 
 ---
 
@@ -157,12 +156,6 @@ Health check — returns 200 if the service is running.
 ```json
 { "status": "ok", "service": "news-website" }
 ```
-
----
-
-### `GET /time-proxy`
-
-Proxies the NTP `/time` response for the browser UI. Agents should call NTP directly — this endpoint exists only for the frontend.
 
 ---
 
@@ -191,7 +184,7 @@ SQLite file at `/data/news.db` (mounted as a Docker volume — data persists acr
 | `author`       | TEXT    | Agent name or ID                       |
 | `category`     | TEXT    | One of the 4 categories above          |
 | `tags`         | TEXT    | JSON array of strings                  |
-| `published_at` | TEXT    | Simulated time (ISO 8601) from NTP     |
+| `published_at` | TEXT    | Publication time (ISO 8601, UTC)       |
 | `created_at`   | TEXT    | Real wall-clock time (ISO 8601)        |
 | `views`        | INTEGER | Incremented on each GET /articles/:id  |
 | `source_urls`  | TEXT    | JSON array of URLs the journalist used |
@@ -208,7 +201,7 @@ On first startup, 3 seed articles are inserted automatically so the simulation w
 import httpx
 
 def publish_article(title, body, category, tags):
-    r = httpx.post("http://news-website:8003/articles", json={
+    r = httpx.post("http://journalism-site:8003/articles", json={
         "title": title,
         "body": body,
         "author": "journalist-agent",
@@ -218,18 +211,18 @@ def publish_article(title, body, category, tags):
     return r.json()  # returns id and published_at
 ```
 
-### Regulator / Board / Customer agent — monitoring the news
+### Any agent — monitoring the news
 
 ```python
 import httpx
 
 def check_for_crisis_news():
-    r = httpx.get("http://news-website:8003/articles/search", params={"q": "salmonella"})
+    r = httpx.get("http://journalism-site:8003/articles/search", params={"q": "salmonella"})
     articles = r.json()
     return articles  # list of matching articles
 
 def get_latest_headlines():
-    r = httpx.get("http://news-website:8003/feed", params={"limit": 5})
+    r = httpx.get("http://journalism-site:8003/feed", params={"limit": 5})
     return r.json()
 ```
 
@@ -238,8 +231,8 @@ def get_latest_headlines():
 ## File structure
 
 ```
-systems/news-website/
-├── main.py           # FastAPI backend — all endpoints, DB, NTP integration
+platforms/journalism-site/
+├── main.py           # FastAPI backend — all endpoints, DB
 ├── ui.html           # Frontend — the live news site UI
 ├── Dockerfile        # Container build instructions
 └── requirements.txt  # Python dependencies
@@ -250,13 +243,12 @@ systems/news-website/
 - `fastapi` — web framework
 - `uvicorn` — ASGI server
 - `pydantic` — request validation
-- `httpx` — HTTP client (for calling NTP)
 - `sqlite3` — built into Python, no install needed
 
 ---
 
 ## Notes
 
-- The News Website **depends on NTP** — it calls NTP to timestamp articles. If NTP is down, it falls back to real time.
-- All agents communicate with this service over the `bitrx` Docker network using the hostname `news-website` and port `8003`.
+- The News Website has no dependencies on other services — articles are timestamped with real UTC time.
+- All agents communicate with this service over the compose network using the hostname `news-website` and port `8003`.
 - The web UI auto-refreshes every 15 seconds — you can watch articles appear in real time during the simulation without manual refresh.

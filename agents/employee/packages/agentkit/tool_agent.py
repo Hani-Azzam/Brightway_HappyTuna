@@ -120,7 +120,7 @@ class ToolAgent(AgentBase):
                 messages.append({"role": "assistant", "content": repair})
                 parsed = _parse_json(repair)
                 if parsed is None:
-                    return "I had trouble producing a valid response format. Please try rephrasing your question."
+                    return self._format_failure_summary()
 
             action = parsed.get("action", "")
             if action == "final_answer":
@@ -139,7 +139,25 @@ class ToolAgent(AgentBase):
             self._executor.log_trace(step, "OBSERVE", None, observation[:120])
             messages.append({"role": "user", "content": observation})
 
-        return "Reached the maximum step limit without a final answer. Please try a simpler question."
+        return self._format_failure_summary(
+            "Reached the maximum step limit without a final answer."
+        )
+
+    def _format_failure_summary(self, prefix: str | None = None) -> str:
+        """An honest fallback when the model can't produce a final_answer.
+
+        Actions may well have succeeded before the format broke down -- report
+        them from the executor trace (the ground truth) instead of implying the
+        whole cycle failed.
+        """
+        done = [
+            f"{t.tool_name}" for t in self._executor.get_traces()
+            if t.phase == "ACT" and t.tool_name and t.details.startswith("OK")
+        ]
+        note = prefix or "The final summary could not be formatted."
+        if done:
+            return f"{note} Completed action(s) this cycle: {', '.join(done)}."
+        return f"{note} No action was taken."
 
     def reset(self) -> None:
         self._executor.clear_traces()
