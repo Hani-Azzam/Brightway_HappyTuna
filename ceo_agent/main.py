@@ -52,7 +52,7 @@ GATEWAY_ROLE = "ceo"
 GATEWAY_DRY_RUN = False
 
 LLM_API_KEY = os.getenv("GEMINI_API_KEY")
-LLM_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
+LLM_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash-lite")
 LLM_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
 
 MAX_PLAN_STEPS = 13

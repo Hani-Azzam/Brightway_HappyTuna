@@ -9,7 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 @dataclass
 class LlmConfig:
     api_key: str
-    model_name: str = "gemini-1.5-flash"
+    model_name: str = "gemini-2.5-flash-lite"
     temperature: float = 0.0
 
 

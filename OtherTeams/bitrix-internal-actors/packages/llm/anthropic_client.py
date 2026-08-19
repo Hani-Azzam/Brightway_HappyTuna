@@ -12,17 +12,18 @@ Two shape differences from OpenAI are handled here:
   - The reply is a list of content blocks; only the **text** is returned (any
     thinking/other blocks are ignored), so the caller still gets a plain string.
 
-Defaults to `claude-opus-4-8` (the most capable model). Override the model for
-cheaper/faster simulation runs via `EMPLOYEE_ANTHROPIC_MODEL=claude-haiku-4-5`.
-`temperature`/`seed` are intentionally not sent — Opus 4.8 rejects them — and
-`thinking` is omitted so this client works unchanged across every Claude model
-(the ReAct system prompt already constrains the reply to one JSON object).
+Defaults to `claude-haiku-4-5` (cheap and fast — what long simulation runs
+want). Override via `EMPLOYEE_ANTHROPIC_MODEL` when a run needs more capability.
+`temperature`/`seed` are intentionally not sent — some Claude models reject
+them — and `thinking` is omitted so this client works unchanged across every
+Claude model (the ReAct system prompt already constrains the reply to one JSON
+object).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-_DEFAULT_MODEL = "claude-opus-4-8"
+_DEFAULT_MODEL = "claude-haiku-4-5"
 
 
 @dataclass

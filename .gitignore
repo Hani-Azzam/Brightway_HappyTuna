@@ -39,3 +39,10 @@ Thumbs.db
 # Vendored third-party trees under OtherTeams/ keep their own venvs & caches
 venv/
 .venv/
+
+# Local task log — not part of the published repo
+changes.md
+
+# Runtime state and logs
+logs/
+state/

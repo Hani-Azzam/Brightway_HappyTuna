@@ -27,7 +27,7 @@ class JournalistConfig:
     chroma_host: str = "chroma"
     chroma_port: int = 8000
     chroma_persist_dir: str = "/data/chroma"
-    model_name: str = "gemini-1.5-flash"
+    model_name: str = "gemini-2.5-flash-lite"
     temperature: float = 0.2      # low = more factual, less creative
     max_steps: int = 12
     max_answer_length: int = 800
@@ -42,7 +42,7 @@ class JournalistConfig:
             chroma_host=os.getenv("CHROMA_HOST", "chroma"),
             chroma_port=int(os.getenv("CHROMA_PORT", "8000")),
             chroma_persist_dir=os.getenv("CHROMA_PERSIST_DIR", "/data/chroma"),
-            model_name=os.getenv("JOURNALIST_MODEL", "gemini-1.5-flash"),
+            model_name=os.getenv("JOURNALIST_MODEL", "gemini-2.5-flash-lite"),
             temperature=float(os.getenv("JOURNALIST_TEMPERATURE", "0.2")),
             max_steps=int(os.getenv("JOURNALIST_MAX_STEPS", "12")),
         )
