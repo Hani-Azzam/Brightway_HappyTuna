@@ -1,0 +1,24 @@
+# Internal Chat — standard MCP door (streamable-http), for MCP-protocol agents
+# such as the CEO gateway. Shares the SQLite volume with the REST container
+# (same pattern as the customer-support platform's api + mcp pair).
+# Build context = platform root:
+#   docker build -f services/internal_messaging/Dockerfile.mcp -t internal-chat-mcp .
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY services/internal_messaging/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY packages/ ./packages/
+COPY services/internal_messaging/ ./services/internal_messaging/
+RUN touch ./services/__init__.py
+
+ENV PYTHONUNBUFFERED=1 \
+    CHAT_DB_PATH=/data/chat.db \
+    MCP_PORT=8090
+
+VOLUME ["/data"]
+EXPOSE 8090
+
+CMD ["python", "-m", "services.internal_messaging.mcp_server"]

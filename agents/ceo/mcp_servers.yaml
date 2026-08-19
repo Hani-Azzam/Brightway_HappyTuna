@@ -1,0 +1,77 @@
+# The only place in the gateway where a URL appears.
+#
+# Profile selects which host set to use:
+#   docker (default) -- service names on the compose network
+#   local            -- host-published ports, for running the gateway off-compose
+# Override with the GATEWAY_URL_PROFILE env var. Local ports come from
+# docker-compose.yml: customer-support-mcp is 8010:8010, social-network is 3005:3000.
+# chat is the exception -- it is served by a different compose project entirely
+# (bitrix-internal-actors), which our docker-compose.yml joins as an external
+# network. See the note on that entry.
+#
+# Excluded on purpose:
+#   customer-agent (http://customer-agent:8000/mcp) -- its one tool,
+#     customer_agent_react, fabricates a customer AND files a real support
+#     ticket (register.py:100-113). A CEO able to call it would be manufacturing
+#     the public it is being evaluated on. PROJECT_README section 2.
+#   email -- not shipped by that team.
+
+version: 1
+default_profile: docker
+
+servers:
+  - id: support
+    enabled: true
+    # list_tickets has no LIMIT (storage.py:254-278) and returns every matching
+    # ticket in full. Generous timeout for a crisis-sized table.
+    timeout_seconds: 60.0
+    urls:
+      docker: http://customer-support-mcp:8010/mcp
+      local: http://localhost:8010/mcp
+
+  - id: analytics
+    enabled: true
+    # No login: analytics is unauthenticated by design (analyticsServer.ts:19).
+    timeout_seconds: 60.0
+    urls:
+      docker: http://social-network:3000/mcp/analytics
+      local: http://localhost:3005/mcp/analytics
+
+  - id: social
+    enabled: true
+    timeout_seconds: 30.0
+    urls:
+      docker: http://social-network:3000/mcp/social
+      local: http://localhost:3005/mcp/social
+    # Identity is per-session closure state (socialServer.ts:38); every write
+    # tool throws 401 until login runs. authService.login upserts on the unique
+    # name, so this exact string always resolves to the same user id across
+    # reconnects -- do not change it mid-simulation.
+    login:
+      tool: login
+      args:
+        name: CEO_HappyTuna
+    # Replayed after every reconnect, so each step must be idempotent.
+    # The parameter is accountType, not type (socialServer.ts:179).
+    post_login_setup:
+      - tool: set_account_type
+        args:
+          accountType: official
+
+  - id: chat
+    enabled: true
+    timeout_seconds: 30.0
+    urls:
+      # The Internal Chat platform's standard MCP door
+      # (platforms/internal-chat/services/internal_messaging/mcp_server.py),
+      # served by the internal-chat-mcp service in the repo-root compose.
+      docker: http://internal-chat-mcp:8090/mcp
+      local: http://localhost:8090/mcp
+    # Identity is bound to the MCP session by login, exactly like social: every
+    # other tool returns 401 until it runs, and the server resolves the role from
+    # its own registry -- agent_id selects who you are, not what you may do.
+    # Replayed after every reconnect, so CEO-1 must stay stable mid-simulation.
+    login:
+      tool: login
+      args:
+        agent_id: CEO-1

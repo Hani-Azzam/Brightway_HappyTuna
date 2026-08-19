@@ -1,0 +1,16 @@
+# Runtime deps for the Internal Chat images (REST door + MCP door).
+# Zero-infra default: SQLite store, no cache, no bus — so only the web stack
+# and the MCP SDK are required.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+httpx==0.27.2
+# The standard MCP server (mcp_server.py). mcp 2.0 removed mcp.server.fastmcp;
+# pinned to the 1.x line, same as the customer-support platform.
+mcp<2
+
+# Optional backends — install only if you flip the matching env switch:
+#   CHAT_STORE=postgres -> psycopg[binary]==3.2.3 psycopg-pool==3.2.3
+#   CHAT_CACHE=redis or CHAT_BUS=redis -> redis==5.1.1
+#   CHAT_BUS=kafka -> confluent-kafka==2.5.3
+# (all imported lazily; the default SQLite path never touches them)

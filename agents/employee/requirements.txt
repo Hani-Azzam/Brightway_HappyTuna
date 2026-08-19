@@ -1,0 +1,7 @@
+# Employee worker runtime. The agents run on Claude (packages/llm/anthropic_client.py);
+# tools reach the Internal Chat and Customer Support platforms over REST via httpx.
+anthropic>=0.40.0
+httpx>=0.27.0
+pydantic>=2.7.0
+pydantic-settings>=2.5.0
+PyYAML>=6.0.0
