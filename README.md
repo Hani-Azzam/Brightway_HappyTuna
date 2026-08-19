@@ -161,8 +161,13 @@ curl -m 60 -X POST https://integrate.api.nvidia.com/v1/chat/completions \
 The customer and influencer agents are the two on NIM. To keep demoing while
 it's degraded, uncomment the **NIM outage escape hatch** block in `.env` — it
 repoints both at Gemini's OpenAI-compatible endpoint with the key you already
-have — then `docker compose up -d customer-agent influencer-agent`. Comment it
-back out to return to NIM; nothing else in the project changes.
+have — then:
+
+```bash
+docker compose up -d --no-deps customer-agent influencer-agent
+```
+
+Comment it back out to return to NIM; nothing else in the project changes.
 
 ## Keeping LLM costs down
 
