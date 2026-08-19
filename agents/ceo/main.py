@@ -8,22 +8,26 @@ the tools it has: whether it looks before it acts, and whether it speaks in
 public.
 
 The CEO's tool surface here is the gateway's (gateway/): the support queue,
-the analytics research surface, and the two public-voice tools its role is
-allowed in roles.yaml. See GatewayToolAdapter and setup_gateway_tools in
-gateway_bridge.py. Requires the gateway's own servers reachable
-(docker compose up -d social-network customer-support-mcp) -- if they are
-not, the run continues with no tools at all; see the printed warning.
+the analytics research surface, the internal chat, and the public-voice tools
+its role is allowed in roles.yaml. See GatewayToolAdapter and
+setup_gateway_tools in gateway_bridge.py. Requires the gateway's own servers
+reachable (docker compose up -d social-network customer-support-mcp
+internal-chat-mcp) -- if they are not, the run continues with no tools at
+all; see the printed warning.
 
-There is no email in this scenario. `services/mail_client.py` talks to an
-HTTP API that nothing in this repo serves, so Send_Email / Check_Inbox are
-not registered.
+This is the HOST-RUN behavioral test; the container runs autopilot.py
+instead (event-driven, with memory).
 
-Run with:  python main.py   (from ceo_agent/)
+Run with:  python main.py   (from agents/ceo/)
 """
 import os
 import sys
 
 from dotenv import load_dotenv
+
+# This entrypoint runs on the host, outside the compose network, so it needs
+# the host-published ports unless the caller already chose a profile.
+os.environ.setdefault("GATEWAY_URL_PROFILE", "local")
 
 # Windows consoles often default stdout/stderr to a codepage (e.g. cp1252)
 # that can't encode emoji -- and the CEO's LLM-drafted social posts routinely

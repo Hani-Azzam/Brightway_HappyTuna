@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["register", "personas", "system_prompt", "event_client", "driver", "main"]
+py-modules = ["register", "personas", "system_prompt", "event_client", "driver", "main", "social_mcp"]
 
 # This is the piece that makes the "nat" CLI auto-discover our custom
 # customer_agent_decision function type at startup -- without this entry

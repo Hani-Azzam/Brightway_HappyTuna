@@ -54,11 +54,13 @@ async def _react(workflow, persona_id: str, event_text: str) -> None:
 
     decision = result.get("decision") or {}
     ticket = result.get("ticket")
+    post = result.get("post") or {}
     logger.info(
-        "persona=%s action=%s ticket=%s",
+        "persona=%s action=%s ticket=%s post=%s",
         persona_id,
         decision.get("action"),
         ticket["ticket_id"] if ticket else None,
+        post.get("id") or post.get("error"),
     )
 
 

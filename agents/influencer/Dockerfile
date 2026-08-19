@@ -8,14 +8,14 @@ COPY pyproject.toml ./
 COPY src ./src
 COPY configs ./configs
 COPY personas ./personas
+# The shared persona base template (persona.py merges it with personas/*.yaml).
+COPY docs ./docs
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .
 
-# docs/ (the Week 2 persona template) is mounted read-only at runtime by docker-compose,
-# since this image's build context is this directory and can't COPY from the repo root.
 # state/ is where per-persona "last seen post" cursors are persisted across restarts.
-RUN mkdir -p /app/docs /app/state
+RUN mkdir -p /app/state
 
 ENV PYTHONUNBUFFERED=1
 

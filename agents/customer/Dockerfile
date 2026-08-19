@@ -2,7 +2,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY pyproject.toml .
-COPY register.py personas.py system_prompt.py event_client.py driver.py main.py ./
+COPY register.py personas.py system_prompt.py event_client.py driver.py main.py social_mcp.py ./
 COPY personas.yaml workflow.yml ./
 COPY guardrails_config ./guardrails_config
 

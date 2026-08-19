@@ -1,29 +1,43 @@
+# HappyTuna crisis simulation — the whole world in one compose file.
+#
+#   cp .env.example .env   # fill in the LLM keys
+#   docker compose up --build
+#
+# Secrets and tuning live in the root .env (shared via `env_file`).
+# Docker-internal URLs are set per service here — they only resolve on the
+# compose network, so they don't belong in .env, which host-run tools share.
+#
+# Ports on the host:
+#   3005  Social network (BrightTweets) UI + API      http://localhost:3005/app/
+#   5173  Customer support dashboard                  http://localhost:5173
+#   8001  Customer agent (MCP)                        http://localhost:8001/mcp
+#   8002  Influencer agent (NAT Swagger UI)           http://localhost:8002/docs
+#   8003  Customer support API                        http://localhost:8003/docs
+#   8004  Journalism site "The Daily Catch"           http://localhost:8004
+#   8006  Event generator                             http://localhost:8006/health
+#   8010  Customer support (MCP)                      http://localhost:8010/mcp
+#   8085  Internal chat REST API                      http://localhost:8085/health
+#   8090  Internal chat (MCP)                         http://localhost:8090/mcp
+
 services:
-  customer-agent:
-    build: ./customer-agent
-    container_name: customer-agent
+
+  # ── Platforms ──────────────────────────────────────────────────────────────
+
+  social-network:
+    build: ./platforms/social-network
+    container_name: social-network
     ports:
-      - "8001:8000"
+      - "3005:3000"
     env_file:
       - .env
     environment:
-      # Docker-internal DNS name and in-container port, not the host-mapped 8006.
-      # Set per-service rather than in .env, which is shared with host-run tools
-      # where this name doesn't resolve.
-      - EVENT_GENERATOR_URL=http://event-generator:8000
-    depends_on:
-      - event-generator
-
-  influencer-agent:
-    build: ./influencer-agent
-    container_name: influencer-agent
-    ports:
-      - "8002:8000"
-    env_file:
-      - .env
+      - DATABASE_URL=file:/app/data/dev.db
+    volumes:
+      - social_network_data:/app/data
+    restart: unless-stopped
 
   customer-support-api:
-    build: ./Customer_Support_System
+    build: ./platforms/customer-support
     container_name: customer-support-api
     ports:
       - "8003:8001"
@@ -31,10 +45,11 @@ services:
       - customer_support_data:/app/data
     environment:
       - CS_DB_PATH=/app/data/customer_support.db
-  
+    restart: unless-stopped
+
   customer-support-mcp:
     build:
-      context: ./Customer_Support_System
+      context: ./platforms/customer-support
       dockerfile: Dockerfile.mcp
     container_name: customer-support-mcp
     ports:
@@ -44,26 +59,57 @@ services:
     environment:
       - CS_DB_PATH=/app/data/customer_support.db
       - MCP_PORT=8010
+    restart: unless-stopped
 
   customer-support-dashboard:
-    build: ./Customer_Support_System/cs-monitor
+    build: ./platforms/customer-support/cs-monitor
     container_name: customer-support-dashboard
     ports:
       - "5173:5173"
     depends_on:
       - customer-support-api
+    restart: unless-stopped
 
-  social-network:
-    build: ./social_network
-    container_name: social-network
+  journalism-site:
+    build: ./platforms/journalism-site
+    container_name: journalism-site
     ports:
-      - "3005:3000"
-    env_file:
-      - ./social_network/.env
-    environment:
-      - DATABASE_URL=file:/app/data/dev.db
+      - "8004:8003"
     volumes:
-      - social_network_data:/app/data
+      - journalism_data:/data
+    environment:
+      - DB_PATH=/data/news.db
+    restart: unless-stopped
+
+  internal-chat:
+    build:
+      context: ./platforms/internal-chat
+      dockerfile: services/internal_messaging/Dockerfile
+    container_name: internal-chat
+    ports:
+      - "8085:8080"
+    volumes:
+      - internal_chat_data:/data
+    environment:
+      - CHAT_DB_PATH=/data/chat.db
+      - CHAT_PORT=8080
+    restart: unless-stopped
+
+  internal-chat-mcp:
+    build:
+      context: ./platforms/internal-chat
+      dockerfile: services/internal_messaging/Dockerfile.mcp
+    container_name: internal-chat-mcp
+    ports:
+      - "8090:8090"
+    volumes:
+      - internal_chat_data:/data
+    environment:
+      - CHAT_DB_PATH=/data/chat.db
+      - MCP_PORT=8090
+    restart: unless-stopped
+
+  # ── Event generator ────────────────────────────────────────────────────────
 
   event-generator:
     build: ./event-generator
@@ -72,7 +118,96 @@ services:
       - "8006:8000"
     env_file:
       - .env
+    restart: unless-stopped
+
+  # ── Agents ─────────────────────────────────────────────────────────────────
+
+  customer-agent:
+    build: ./agents/customer
+    container_name: customer-agent
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      # Docker-internal DNS names and in-container ports, not host-mapped ones.
+      - EVENT_GENERATOR_URL=http://event-generator:8000
+      - CUSTOMER_SUPPORT_MCP_URL=http://customer-support-mcp:8010/mcp
+      - SOCIAL_NETWORK_MCP_URL=http://social-network:3000/mcp/social
+    depends_on:
+      - event-generator
+      - customer-support-mcp
+      - social-network
+    restart: unless-stopped
+
+  influencer-agent:
+    build: ./agents/influencer
+    container_name: influencer-agent
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+    environment:
+      - SOCIAL_NETWORK_BASE_URL=http://social-network:3000
+    volumes:
+      - influencer_state:/app/state
+    depends_on:
+      - social-network
+    restart: unless-stopped
+
+  journalist-agent:
+    build: ./agents/journalist
+    container_name: journalist-agent
+    env_file:
+      - .env
+    environment:
+      - EVENT_GENERATOR_URL=http://event-generator:8000
+      - NEWS_URL=http://journalism-site:8003
+      - SOCIAL_URL=http://social-network:3000
+    depends_on:
+      - event-generator
+      - journalism-site
+      - social-network
+    restart: unless-stopped
+
+  employee-agent:
+    build: ./agents/employee
+    container_name: employee-agent
+    env_file:
+      - .env
+    environment:
+      - EMPLOYEE_INTERNAL_MESSAGING_URL=http://internal-chat:8080
+      - EMPLOYEE_CUSTOMER_SUPPORT_URL=http://customer-support-api:8001
+    volumes:
+      - employee_data:/data
+    depends_on:
+      - internal-chat
+      - customer-support-api
+    restart: unless-stopped
+
+  ceo-agent:
+    build: ./agents/ceo
+    container_name: ceo-agent
+    env_file:
+      - .env
+    environment:
+      - EVENT_GENERATOR_URL=http://event-generator:8000
+      # The gateway resolves its MCP server URLs from mcp_servers.yaml; the
+      # "docker" profile (the default) uses the service names above.
+    volumes:
+      - ceo_data:/data
+    depends_on:
+      - event-generator
+      - customer-support-mcp
+      - social-network
+      - internal-chat-mcp
+    restart: unless-stopped
 
 volumes:
   customer_support_data:
   social_network_data:
+  journalism_data:
+  internal_chat_data:
+  influencer_state:
+  employee_data:
+  ceo_data:

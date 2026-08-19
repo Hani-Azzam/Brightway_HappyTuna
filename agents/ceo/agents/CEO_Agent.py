@@ -1,83 +1,48 @@
 import json
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import re
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from base.agent_base import AgentBase
 from services.llm_client import LlmClient
+from services.memory import ConversationMemory
 from services.tool_executor import ToolExecutor
 
 
-company_information = ("This some information about the company : Product -> Canned Tuna Products, Employees -> 500, Annual Revenue -> 250M$, Market Position -> Top 3 tuna brand in BitriX (is the name we called to our agents world), Reputation -> high quality and trusted family brand."
-                  "## Here list of assets exists in the BitriX world :"
-                  "1. Internal Messaging System : A company-wide communication platform used for discussions, announcements, crisis coordination, and employee collaboration. the system enables direct chats and group chats."
-                  "2. Company Website : The company's official communication channel for announcements, press releases, and public statements."
-                  "3. News Portal : A digital news ecosystem where journalists publish articles, investigations, interviews, and breaking news."
-                  "4. Social Network : A public social media platform where users share opinions, discuss events, react to news, and create trends."
-                  "5. CRM (Customer Relationship Management) : Stores customer information, complaints, contracts, support interactions, satisfaction levels, and loyalty indicators."
-                  "6. Customer Support Center : Handles customer inquiries, complaints, refund requests, and support tickets."
-                  "7. Operations Systems : These systems help manage the company's day-to-day activities."
-                  "8. Employee Portal : Contains employee information, organizational announcements, morale indicators, and internal feedback."
-                  "9. BitriX Mail : A world-wide email system. Every agent in BitriX has: * Email address, * Inbox, * Sent folder, * Contact list."
-                  "10. Quality lab : A lab the test food quality continuesly."
-                  "## Here list of agents that takes role in the BitriX world with some information :"
-                  "1. CEO - The manager of the star company :  --Description : The highest authority within the company. Responsible for strategic decisions, crisis response, stakeholder management, and long-term organizational survival."
-                  "--Responsibilities : * Strategic direction, * Crisis leadership, * Executive alignment, * External stakeholder communication, * Final decision approval."
-                  "--Decision Scope : * High-level strategic decisions, * Resource allocation, * Public statements, * Executive appointments, * Emergency actions."
-                  "--Objectives : * Company survival, * Growth, * Reputation protection, * Stakeholder trust."
-                  "--Possible Actions : * Approve strategy, * Reject proposals, * Allocate resources, * Declare emergency, * Communicate publicly, * Replace executives, * Approve a plan, * Move money, * Call an emergency, * Speak in public, * Replace a manager."
-                  "--Uses : * BitriX Mail, * Internal Messaging System, * CRM, * Employee Portal, * News Portal, * Social Network, * Company Website."
-                  "--Purpose : Manage the company, monitor reputation, make decisions, communicate with stakeholders."
-                  "2. COO - Chief Operations Officer : --Description : Responsible for maintaining operational continuity and ensuring the company continues functioning during normal and crisis conditions."
-                  "--Responsibilities : * Operations management, * Business continuity, * Service delivery, * Resource coordination."
-                  "--Decision Scope : * Operational procedures, * Process prioritization, * Continuity plans."
-                  "--Objectives : * Minimize disruption, * Maintain productivity, * Preserve continuity."
-                  "--Possible Actions : * Activate contingency plans, * Reassign resources, * Suspend services, * Prioritize operations."
-                  "--Uses: * BitriX Mail, * Internal Messaging System, * CRM, * Employee Portal."
-                  "--Purpose : Manage daily operations and execute company strategy."
-                  "3. Employee - Worker within the organization : --Description : Executes operational tasks and reacts to leadership decisions."
-                  "--Responsibilities : * Task execution, * Collaboration, * Issue reporting."
-                  "--Decision Scope : * Local decisions, * Escalations."
-                  "--Objectives : * Job success, * Career advancement, * Stability."
-                  "--Possible Actions : * Perform work, * Report issues, * Escalate concerns, * Resign."
-                  "--Uses : * BitriX Mail, * Internal Messaging System, * Employee Portal."
-                  "--Purpose : Perform work, collaborate with colleagues, report issues."
-                  "4. Board Member - Board Director : --Description : Represents ownership and governance interests. Evaluates executive performance and strategic decisions."
-                  "--Responsibilities : * Governance, * Oversight, * Executive evaluation."
-                  "--Decision Scope : * CEO evaluation, * Strategic approval, * Executive replacement."
-                  "--Objectives : * Maximize organizational value, * Reduce governance risk."
-                  "--Possible Actions : * Request reviews, * Vote on proposals, * Replace leadership."
-                  "--Uses : * BitriX Mail, * News Portal, * Social Network, * Company Website."
-                  "--Purpose : Monitor company performance and evaluate CEO decisions."
-                  "5. Customer - Consumer of company products or services : --Description : Evaluates the organization based on delivered value, trust, and experience."
-                  "--Responsibilities : * Consume products, * Provide feedback."
-                  "--Decision Scope : * Purchase decisions."
-                  "--Objectives : * Receive value, * Minimize risk."
-                  "--Possible Actions : * Buy, * Return products, * Complain, * Recommend."
-                  "--Uses : * Customer Support Center, * Social Network, * News Portal, * Company Website, * BitriX Mail."
-                  "--Purpose : Consume products/services, seek support, form opinions about the company."
-                  "6. Journalist - Media representative : --Description : Collects information and publishes content affecting public perception."
-                  "--Responsibilities : * Investigate events, * Publish reports."
-                  "--Decision Scope : * Story selection, * Narrative framing."
-                  "--Objectives : * Audience growth, * Credibility, * Impact."
-                  "--Possible Actions : * Publish article, * Interview stakeholders, * Investigate claims."
-                  "--Uses : * News Portal, * Social Network, * BitriX Mail, * Company Website."
-                  "--Purpose : Gather information, investigate events, publish news."
-                  "7. Influencer - Independent opinion leader : --Description : Shapes public opinion through content and commentary."
-                  "--Responsibilities : * Create content, * Interpret events."
-                  "--Decision Scope : * Narrative selection, * Audience engagement."
-                  "--Objectives : * Audience growth, * Influence, * Reputation."
-                  "--Possible Actions : * Post content, * Promote narratives, * Support campaigns."
-                  "--Uses : * Social Network, * News Portal, * Company Website."
-                  "--Purpose : Interpret events, influence public opinion, amplify narratives."
-                  "8. Regulator - Government oversight authority : --Description : Ensures organizations comply with laws, regulations, and public safety requirements."
-                  "--Responsibilities : * Investigation, * Enforcement, * Compliance review."
-                  "--Decision Scope : * Fines, * Audits, * Restrictions."
-                  "--Objectives : * Public protection, * Compliance enforcement."
-                  "--Possible Actions : * Launch investigation, * Issue fines, * Demand remediation."
-                  "--Uses : * BitriX Mail, * News Portal, * Company Website, * Customer Support Center."
-                  "--Purpose : Monitor organizations, investigate complaints, enforce regulations.")
+company_information = (
+    "This is some information about the company: Product -> Canned Tuna Products, "
+    "Employees -> 500, Annual Revenue -> 250M$, Market Position -> Top 3 tuna brand, "
+    "Reputation -> high quality and trusted family brand."
+    "## The systems that exist in the simulated world (you reach them through your tools):"
+    "1. Internal Chat (chat.*): the company-wide messaging platform for discussions, "
+    "announcements, crisis coordination, and employee collaboration. Employees are woken "
+    "up when you @mention their agent id (e.g. @EMP-QA-17) in a channel they belong to."
+    "2. Customer Support (support.*): handles customer inquiries, complaints, refund "
+    "requests, and support tickets."
+    "3. Social Network 'BrightTweets' (social.*): the public social platform where "
+    "customers and influencers share opinions, react to news, and create trends. "
+    "Anything you post there is public and irreversible."
+    "4. Social Analytics (analytics.*): the research surface over the social network - "
+    "opinion index, crisis meter, sentiment timelines, narratives, spike detection."
+    "5. News Portal 'The Daily Catch': a journalism site where an independent journalist "
+    "publishes articles about the company. You see its impact through the social network "
+    "and the press briefings you receive; you cannot publish there."
+    "## The agents that act in this world:"
+    "1. CEO (you) - the highest authority within the company. Responsible for strategic "
+    "decisions, crisis response, stakeholder communication, and organizational survival. "
+    "Your levers: read every system, respond to support tickets (patch), speak publicly "
+    "(social posts/comments), and coordinate internally (chat messages, channels)."
+    "2. Employees - workers with ids like EMP-QA-17 (QA), PROD-WORKER-3 (production), "
+    "PLANT-MGR-1 (plant manager), CONCERNED-EMP-1, WHISTLEBLOWER-1. They report issues, "
+    "escalate concerns, respond in chat when mentioned, and handle support tickets."
+    "3. Customers - consumer personas who buy or stop buying, open support tickets, and "
+    "complain or recommend on the social network."
+    "4. Journalist - investigates events and publishes articles on The Daily Catch, then "
+    "shares headlines on the social network."
+    "5. Influencers - independent opinion leaders on the social network who amplify or "
+    "criticize what they see."
+)
 
 
 
@@ -96,24 +61,38 @@ def _parse_json(text: str) -> dict | None:
     except json.decoder.JSONDecodeError:
         return None
 
-def _build_planner_prompt(tool_schemas: List[Dict[str, Any]], user_event: str) -> str:
+def _build_planner_prompt(
+        tool_schemas: List[Dict[str, Any]],
+        user_event: str,
+        memory_context: str = "",
+) -> str:
     """Generates the initial plan for the CEO agent."""
     tools_summary = "\n".join([f"- {s['name']}: {s['description']}" for s in tool_schemas])
 
+    memory_section = ""
+    if memory_context:
+        memory_section = f"""
+WHAT YOU REMEMBER FROM EARLIER (your own past cycles -- do not repeat actions
+already taken; follow up on commitments instead):
+{memory_context}
+"""
+
     return f"""You are a CEO Agent in Food Manufacturing Company Named **HappyTuna**. managing corporate operations.
-This information about the company and his agnet and roles: "{company_information}"     
+This information about the company and its agents and roles: "{company_information}"
+{memory_section}
 A major event/problem has occurred: "{user_event}"
 
 Available Tools & Sub-Agents:
 {tools_summary}
 
 Task: Break down how to resolve this event into a clear, sequential plan of sub-tasks.
-Keep the plan concise (maximum 15 steps).
+Keep the plan concise (maximum 15 steps), and keep it grounded in the tools that
+actually exist above.
 
 RESPONSE FORMAT (JSON ONLY):
 {{
   "plan": [
-    "Step 1 action description (e.g., send email to COO_Agent to activate contingency plans)",
+    "Step 1 action description (e.g., read the open safety_concern tickets in the support queue)",
     "Step 2 action description",
     "Step 3 action description"
   ]
@@ -328,10 +307,12 @@ class CeoAgent(AgentBase):
             llm_client: LlmClient,
             executor: ToolExecutor,
             config: CeoConfig = CeoConfig(),
+            memory: Optional[ConversationMemory] = None,
     ) -> None:
         self._llm = llm_client
         self._executor = executor
         self._config = config
+        self._memory = memory
 
     def chat(self, user_input: str) -> str:
         self._executor.clear_traces()
@@ -342,7 +323,8 @@ class CeoAgent(AgentBase):
         # ==========================================
         self._executor.log_trace(0, "PLAN", None, "CEO generating initial plan...")
 
-        planner_prompt = _build_planner_prompt(tool_schemas, user_input)
+        memory_context = self._memory.render() if self._memory is not None else ""
+        planner_prompt = _build_planner_prompt(tool_schemas, user_input, memory_context)
         raw_plan = self._llm.invoke([HumanMessage(content=planner_prompt)])
         parsed_plan = _parse_json(raw_plan)
 
@@ -402,9 +384,22 @@ where a tool ran, the data it returned. A step marked completed succeeded — do
 not describe it, or the information it retrieved, as unavailable. Report a gap
 only where a step is marked not completed, and say which step and why.
 
-Provide a final decision/summary report to the board and other team agents."""
+Provide a concise final decision/summary report for the executive record."""
 
         final_response = self._llm.invoke([HumanMessage(content=summary_prompt)])
+
+        if self._memory is not None:
+            # Record what actually happened, not just what the model says: the
+            # successful tool calls are the ground truth of this cycle.
+            actions = [
+                f"{t.tool_name} (ok)" for t in self._executor.get_traces()
+                if t.phase == "ACT" and t.tool_name and t.details.startswith("OK")
+            ]
+            outcome = final_response
+            if actions:
+                outcome = f"Tools used: {', '.join(actions)}. Report: {final_response}"
+            self._memory.add(situation=user_input, outcome=outcome)
+
         return final_response
 
     def _execute_single_step(

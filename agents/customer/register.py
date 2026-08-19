@@ -12,6 +12,9 @@ Given a persona_id and an event, this:
      ticket in the Customer Support system -- no custom HTTP/MCP client code
      needed, NAT's mcp_client function group already exposes it as a callable
      function.
+  4. If the decision is to complain_on_social_media or recommend_company,
+     publishes a REAL post on the Social Network over its MCP server
+     (social_mcp.py), logged in as this persona's display name.
 
 Per-persona memory (trust score, past decisions) is kept in-memory, keyed
 by persona_id. See the note at the bottom about upgrading this later.
@@ -27,6 +30,7 @@ from nat.data_models.function import FunctionBaseConfig
 
 from nemoguardrails import LLMRails, RailsConfig
 
+import social_mcp
 from personas import get_persona
 from system_prompt import SYSTEM_PROMPT
 
@@ -123,6 +127,7 @@ async def customer_agent_decision(config: CustomerAgentDecisionConfig, builder: 
             "event": event,
             "decision": decision,
             "ticket": None,
+            "post": None,
         }
 
         if decision.get("action") == "open_support_ticket":
@@ -134,6 +139,19 @@ async def customer_agent_decision(config: CustomerAgentDecisionConfig, builder: 
             })
             ticket = json.loads(ticket_raw) if isinstance(ticket_raw, str) else ticket_raw
             result["ticket"] = ticket
+
+        if decision.get("action") in ("complain_on_social_media", "recommend_company"):
+            post_text = decision.get("post_text") or decision.get("reasoning", "")
+            try:
+                post = await social_mcp.create_post_as(
+                    persona_name=persona.get("display_name") or persona_id,
+                    content=post_text,
+                )
+            except Exception as exc:  # noqa: BLE001 -- a failed post must not void the decision
+                logger.warning("social post failed for persona=%s: %s", persona_id, exc)
+                result["post"] = {"error": str(exc)}
+            else:
+                result["post"] = post
 
         memory["trust_score"] = decision.get("trust_score", memory["trust_score"])
         memory["past_decisions"].append({

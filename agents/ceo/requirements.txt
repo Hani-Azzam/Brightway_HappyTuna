@@ -36,25 +36,10 @@ pytest-asyncio==1.4.0
 # httpx arrives as a transitive dependency of mcp 1.x and is imported directly by
 # connection.py to classify connection failures. Left unpinned so mcp's own
 # constraint governs the version.
-
-
-
-
-
-# Requirement for the Ceo Agent
-# NOTE: langchain-core is pinned once, above (==1.5.4), for the gateway's
-# StructuredTool usage. It used to be pinned again here at >=0.3.0,<0.4.0
-# (the pre-gateway langchain generation), which made `pip install` fail with
-# ResolutionImpossible -- two exact-conflicting constraints on the same
-# package. langchain-google-genai is bumped to match the 1.x langchain-core
-# line; its ChatGoogleGenerativeAI(model=, api_key=, temperature=) surface,
-# the only part llm_client.py uses, is unchanged across that range.
-langchain-text-splitters>=1.0.0
+# --- CEO agent runtime -------------------------------------------------------
+# The LLM client (services/llm_client.py) speaks Gemini through LangChain.
+# langchain-google-genai matches the 1.x langchain-core line pinned above; its
+# ChatGoogleGenerativeAI(model=, api_key=, temperature=) surface -- the only
+# part llm_client.py uses -- is stable across that range.
 langchain-google-genai>=2.0.0
-google-generativeai>=0.8.0,<0.9.0
 python-dotenv>=1.0.0,<2.0.0
-langchain-chroma>=1.0.0
-nvidia-nat[langchain]
-fastapi>=0.115.0,<1.0.0
-uvicorn>=0.35.0,<1.0.0
-requests>=2.32.0,<3.0.0

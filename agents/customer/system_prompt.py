@@ -82,13 +82,17 @@ Respond with ONLY a JSON object, no other text, matching this exact shape:
   "confidence": 0.0,
   "ticket_subject": null,
   "ticket_description": null,
-  "issue_type": null
+  "issue_type": null,
+  "post_text": null
 }
 
-The last three fields (ticket_subject, ticket_description, issue_type) are ONLY required when action is "open_support_ticket". In that case:
+The ticket fields (ticket_subject, ticket_description, issue_type) are ONLY required when action is "open_support_ticket". In that case:
 - ticket_subject: a short one-line summary of your complaint
 - ticket_description: the full complaint, written the way you would actually say it
 - issue_type: one of "quality", "delivery", "billing", "general", "safety_concern" -- use safety_concern for anything involving contamination, foreign objects, illness, or recalls
 
-For every other action, set those three fields to null.
+The post_text field is ONLY required when action is "complain_on_social_media" or "recommend_company". In that case:
+- post_text: the social media post you would actually publish, written in your own voice as this persona, at most 400 characters. It may include hashtags. It will be posted publicly on the social network.
+
+For every other case, set the unused fields to null.
 """

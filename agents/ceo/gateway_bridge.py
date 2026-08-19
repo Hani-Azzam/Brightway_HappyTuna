@@ -67,7 +67,10 @@ class GatewayBridge:
     async def _lifecycle(self, role: str, dry_run: bool) -> None:
         self._shutdown_event = asyncio.Event()
         try:
-            configs = load_registry(profile="local")
+            # Profile comes from GATEWAY_URL_PROFILE (or the registry file's
+            # default, "docker"). Host-run entrypoints that need the published
+            # ports set GATEWAY_URL_PROFILE=local themselves (see main.py).
+            configs = load_registry()
             async with GatewayConnections(configs) as connections:
                 await connections.connect_all()
                 self.statuses = connections.statuses
@@ -143,9 +146,9 @@ class GatewayToolAdapter(ToolBase):
 def setup_gateway_tools(executor: ToolExecutor, role: str, dry_run: bool) -> GatewayBridge:
     """Connects to the MCP gateway and registers every tool `role` may call.
 
-    `--profile local` (mirrored here via profile="local"): this script runs
-    on the host, not inside the compose network, so it needs the
-    host-published ports from docker-compose.yml.
+    URL profile: resolved by the registry (GATEWAY_URL_PROFILE env var, falling
+    back to the registry default "docker"). In a container the compose DNS names
+    resolve; on the host set GATEWAY_URL_PROFILE=local for the published ports.
 
     Never silently loses a server: connect_all() already records a reason
     for each server that did not connect (README: "A silent CEO and one that
