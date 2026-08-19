@@ -46,3 +46,5 @@ changes.md
 # Runtime state and logs
 logs/
 state/
+agents/ceo/data/
+.chroma/
