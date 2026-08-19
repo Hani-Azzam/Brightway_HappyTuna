@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+*.dist-info/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# db
+*.db
+# Secrets — never commit real env files (any directory, any suffix)
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
+# Vendored third-party trees under OtherTeams/ keep their own venvs & caches
+venv/
+.venv/

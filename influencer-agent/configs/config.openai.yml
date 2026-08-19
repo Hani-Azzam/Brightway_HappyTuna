@@ -1,0 +1,16 @@
+# NAT workflow config — OpenAI backend (alternative to config.nim.yml).
+#
+# Requires OPENAI_API_KEY in the environment. Select this file instead of config.nim.yml
+# by setting NAT_CONFIG_FILE=configs/config.openai.yml. See influencer-agent/README.md.
+
+llms:
+  decision_llm:
+    _type: openai
+    model_name: gpt-4o-mini
+    temperature: 0.4
+    max_tokens: 600
+
+workflow:
+  _type: influencer_decision
+  llm_name: decision_llm
+  max_retries: 2

@@ -1,0 +1,21 @@
+# NAT workflow for the Customer Agent.
+#
+# function_groups.customer_support auto-discovers all 5 Customer Support
+# tools from the MCP server -- no custom wrapper code needed.
+#
+# workflow is our custom customer_agent_decision function directly, which
+# internally calls a NIM-hosted model through NeMo Guardrails, and calls
+# the discovered create_ticket tool when the decision is to complain.
+
+function_groups:
+  customer_support:
+    _type: mcp_client
+    server:
+      transport: streamable-http
+      url: ${CUSTOMER_SUPPORT_MCP_URL:-http://customer-support-mcp:8010/mcp}
+
+workflow:
+  _type: customer_agent_decision
+  function_group_name: customer_support
+  create_ticket_tool_name: customer_support__create_ticket
+  guardrails_config_path: guardrails_config

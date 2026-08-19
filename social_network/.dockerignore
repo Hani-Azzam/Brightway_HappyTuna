@@ -1,0 +1,10 @@
+**/node_modules
+npm-debug.log
+docs/
+**/.md
+.git
+.gitignore
+.env.example
+**/__tests__
+prisma/**/*.db*
+coverage/

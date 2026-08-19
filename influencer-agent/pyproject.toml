@@ -1,0 +1,21 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=64"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "influencer-agent"
+version = "0.1.0"
+requires-python = ">=3.11,<3.14"
+description = "Influencer agent for the BrightWay/HappyTuna simulation, built on NVIDIA NeMo Agent Toolkit. Talks to social_network only through its public HTTP API."
+readme = "README.md"
+dependencies = [
+  "nvidia-nat[langchain]==1.8.0",
+  "httpx>=0.27",
+  "pyyaml>=6.0",
+]
+
+[project.entry-points.'nat.components']
+influencer_agent = "influencer_agent.register"

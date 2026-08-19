@@ -1,0 +1,96 @@
+services:
+
+  # ── Shared infrastructure ──────────────────────────────────────────────────
+
+  ntp:
+    build: ./systems/ntp
+    container_name: bitrx-ntp
+    ports:
+      - "8001:8001"
+    environment:
+      - SPEED_MULTIPLIER=60
+      - SIM_START=2024-06-10T08:00:00Z
+    networks:
+      - bitrx
+    restart: unless-stopped
+
+  news-website:
+    build: ./systems/news-website
+    container_name: bitrx-news
+    ports:
+      - "8003:8003"
+    volumes:
+      - news-data:/data
+    environment:
+      - NTP_URL=http://ntp:8001
+      - DB_PATH=/data/news.db
+    depends_on:
+      - ntp
+    networks:
+      - bitrx
+    restart: unless-stopped
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: bitrx-chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    networks:
+      - bitrx
+    restart: unless-stopped
+
+  # ── Agents ─────────────────────────────────────────────────────────────────
+
+  journalist:
+    build:
+      context: .
+      dockerfile: agents/journalist/Dockerfile
+    container_name: bitrx-journalist
+    env_file:
+      - .env
+    environment:
+      - EVENT_GENERATOR_URL=http://event-generator:8000
+      - NTP_URL=http://ntp:8001
+      - NEWS_URL=http://news-website:8003
+      - CHROMA_HOST=chroma
+      - SOCIAL_URL=http://social-network:3005
+    depends_on:
+      - ntp
+      - news-website
+      - chroma
+    networks:
+      - bitrx
+    restart: unless-stopped
+
+  # regulator:
+  #   build:
+  #     context: .
+  #     dockerfile: agents/regulator/Dockerfile
+  #   container_name: bitrx-regulator
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - ntp
+  #     - news-website
+  #     - chroma
+  #   networks:
+  #     - bitrx
+  #   restart: unless-stopped
+
+  # ── Other teams' services ───────────────────────────────────────────────────
+  # social-network:
+  # email:
+  # quality-lab:
+  # staff-portal:
+  # customer-support:
+  # internal-chat:
+
+volumes:
+  news-data:
+  chroma-data:
+
+networks:
+  bitrx:
+    driver: bridge

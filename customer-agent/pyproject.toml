@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "customer-agent"
+version = "0.1.0"
+description = "Customer Agent for the HappyTuna crisis simulation"
+requires-python = ">=3.11"
+dependencies = [
+    "nvidia-nat[langchain]",
+    "nvidia-nat-mcp",
+    "nemoguardrails",
+    "pyyaml",
+    "httpx",
+]
+
+[tool.setuptools]
+py-modules = ["register", "personas", "system_prompt", "event_client", "driver", "main"]
+
+# This is the piece that makes the "nat" CLI auto-discover our custom
+# customer_agent_decision function type at startup -- without this entry
+# point, "nat mcp serve" (or "nat serve") has no way of knowing register.py
+# exists, even though it's sitting right there in the working directory.
+[project.entry-points."nat.components"]
+customer_agent = "register"

@@ -1,0 +1,4 @@
+nvidia-nat[langchain]
+nvidia-nat-mcp
+nemoguardrails
+pyyaml

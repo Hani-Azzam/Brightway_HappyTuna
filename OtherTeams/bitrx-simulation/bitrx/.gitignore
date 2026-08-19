@@ -1,0 +1,32 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Database files
+*.db
+*.sqlite3
+
+# Chroma DB data
+/data/
+
+# Docker
+.dockerignore
+
+# VS Code
+.vscode/
+.idea
+
+# OS
+.DS_Store
+Thumbs.db

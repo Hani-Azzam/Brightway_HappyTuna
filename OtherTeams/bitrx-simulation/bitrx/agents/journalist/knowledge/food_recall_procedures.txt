@@ -1,0 +1,42 @@
+FOOD RECALL PROCEDURES — JOURNALIST REFERENCE
+
+What is a food recall?
+A food recall is an action taken to remove a food product from the market when there is reason to believe it may cause health problems or be mislabelled. Recalls can be initiated voluntarily by the manufacturer or mandated by a regulatory authority such as the Ministry of Health.
+
+Classes of recall:
+- Class I: Dangerous or defective products that predictably could cause serious health problems or death. Example: salmonella contamination in ready-to-eat products.
+- Class II: Products that may cause a temporary adverse health consequence. Example: undeclared allergens unlikely to cause serious harm.
+- Class III: Products unlikely to cause any adverse health reaction but violate labelling regulations.
+
+Legal obligations during a food safety incident:
+1. Manufacturers must notify the Ministry of Health within 24-48 hours of confirming a safety risk.
+2. Companies must maintain records of all production batches and distribution chains.
+3. A press release or public notice must be issued once a Class I recall is confirmed.
+4. Retailers must remove affected products from shelves within 24 hours of notification.
+5. Companies must report the scope and outcome of the recall to authorities upon completion.
+
+Timeline of a typical salmonella recall:
+- Hour 0: Contamination detected in quality lab
+- Hour 2-6: Internal confirmation and escalation to management
+- Hour 6-24: Regulatory notification (Ministry of Health)
+- Hour 24-48: Public announcement and batch number publication
+- Day 2-5: Product retrieval from retail chains
+- Day 5-30: Investigation into contamination source
+- Day 30+: Corrective action report submitted to regulators
+
+What journalists should verify:
+- Which production batches are affected (batch numbers and date ranges)
+- Whether the product has already reached consumers
+- What the company is doing to notify affected customers
+- Whether regulators have confirmed the incident independently
+- The company's track record with past safety incidents
+
+Key questions to ask the company:
+- What is the exact nature of the contamination?
+- Which batch numbers are affected?
+- How many units were distributed and to which retailers?
+- When did you first become aware of the problem?
+- What steps are you taking to prevent recurrence?
+
+Salmonella facts for context:
+Salmonella is a bacterial infection that causes salmonellosis. Symptoms include diarrhoea, fever, and abdominal cramps, appearing 6 hours to 6 days after infection. Most people recover within 4-7 days. However, severe cases can require hospitalisation, especially in children under 5, elderly adults, and people with weakened immune systems. In canned seafood, salmonella can survive if the canning process does not reach the correct temperature and pressure.

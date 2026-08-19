@@ -1,0 +1,177 @@
+HAPPYTUNA BITRX WORLD REFERENCE — JOURNALIST KNOWLEDGE BASE
+
+---
+
+HAPPYTUNA COMPANY PROFILE
+
+Industry: Food Manufacturing
+Product: Canned Tuna Products
+Employees: 500
+Annual Revenue: $250 million
+Market Position: Top 3 tuna brand in BitriX world
+Reputation: High quality and trusted family brand
+
+Production facility:
+- Two active production lines: Line A (older, since 1995) and Line B (newer, completed 2024)
+- Line A handles standard tuna cans
+- Line B handles premium products
+- On-site quality control lab runs daily batch testing
+- Facility runs two shifts, 6 days a week
+
+Distribution:
+- Products distributed to major supermarket chains
+- Exported to retail partners in Europe and Middle East
+- Products reach store shelves within 3-5 days of production
+
+Key executives:
+- CEO: highest authority, responsible for strategic decisions and crisis response
+- COO: responsible for operational continuity and daily operations
+- Head of Quality: oversees lab testing and safety compliance
+
+Press contact: press@happytuna.com
+
+---
+
+WHO THE JOURNALIST INTERACTS WITH
+
+CEO (Chief Executive Officer):
+- Highest authority in the company
+- Makes strategic decisions, public statements, crisis response decisions
+- Can approve recalls, declare emergencies, allocate resources
+- Contact via BitriX Mail: ceo@happytuna.com
+- Key person to interview during a crisis
+
+COO (Chief Operations Officer):
+- Responsible for operational continuity
+- Manages production lines, resource coordination
+- Contact via BitriX Mail: coo@happytuna.com
+- Will know status of production lines and containment actions
+
+Employees:
+- Execute operational tasks
+- May report issues or escalate concerns
+- Some may be whistleblowers with inside information
+- Contact via BitriX Mail or Employee Portal
+
+Board Members:
+- Represent ownership and governance interests
+- Evaluate CEO performance during a crisis
+- May replace leadership if crisis is mishandled
+- Monitor company through News Portal and Social Network
+
+Regulator (Ministry of Health / Financial Authority):
+- Ensures company follows food safety laws
+- Can launch investigations, issue fines, demand remediation
+- Contact via BitriX Mail: regulator@ministry.gov
+- Will act if public health risk is confirmed
+
+Customers:
+- Consume HappyTuna products
+- May complain via Customer Support Center
+- Discuss experiences on Social Network
+- A health complaint from customers can trigger regulatory action
+
+Influencers:
+- Shape public opinion through social content
+- Monitor News Portal and Social Network
+- Can amplify or minimize crisis narrative
+- Some are consumer-rights focused, others sensational
+
+---
+
+SYSTEMS IN THE BITRX WORLD
+
+News Portal (The Daily Catch):
+- External news site where journalists publish articles
+- Read by all agents: Board, Customers, Regulator, Influencers
+- API: POST /articles to publish, GET /articles to read
+- Published articles shape public perception of the crisis
+
+Social Network:
+- Public social media platform
+- Users share opinions, react to news, create trends
+- Influencers and customers are most active here
+- Viral posts can rapidly escalate a crisis
+
+BitriX Mail:
+- World-wide email system
+- Every agent has an email address, inbox, sent folder, contact list
+- Primary channel for journalist to contact sources and request interviews
+- Regulator uses it to contact the company officially
+
+CRM (Customer Relationship Management):
+- Internal company system — not directly accessible to journalist
+- Stores customer complaints, support interactions, satisfaction levels
+- If journalist gets leaked CRM data, it is highly newsworthy
+
+Customer Support Center:
+- Handles customer complaints, refund requests, support tickets
+- Increase in complaints signals a growing crisis
+- Journalist may contact customer support to gauge company response
+
+Internal Messaging System:
+- Company-wide internal communication platform
+- Not accessible to journalist directly
+- Leaked internal messages are valuable investigative material
+
+Employee Portal:
+- Contains employee information and internal feedback
+- Not accessible to journalist directly
+- Whistleblower employees may share information with journalist
+
+Quality Lab:
+- On-site lab that tests food quality continuously
+- Lab results are the origin of the HappyTuna salmonella crisis
+- Company is legally required to report confirmed safety risks within 24-48 hours
+
+NTP (Time Service):
+- Global timing system for the BitriX world
+- Determines the date and time for all events in the simulation
+
+---
+
+THE CRISIS SCENARIO
+
+What happened:
+The quality lab at HappyTuna detected salmonella on Production Line A. Some contaminated cans may already be in stores. The company must decide how to respond.
+
+Key facts about the crisis:
+- Production Line A is the older line, operational since 1995
+- Salmonella in canned seafood can survive if canning temperature/pressure was insufficient
+- Products from Line A may already be distributed to stores
+- The company is legally required to notify the Ministry of Health within 24-48 hours
+- This is HappyTuna's first major food safety incident on record
+
+What the journalist needs to find out:
+- When exactly was the contamination detected?
+- Which batch numbers are affected?
+- Have products already reached consumers?
+- Has the company notified the regulator?
+- What is the company doing to contain the situation?
+- Is the CEO making public statements?
+- What do independent food safety experts say about the risk?
+
+Why this story matters:
+- Public health risk — consumers may have already purchased affected products
+- Company accountability — HappyTuna has a trusted family brand reputation at stake
+- Regulatory response — how quickly does the Ministry of Health act?
+- CEO decision quality — is leadership handling this correctly?
+
+---
+
+JOURNALIST CHARACTERISTICS (official BitriX definition)
+
+The Journalist agent in BitriX is defined by these configurable traits:
+- Investigative Depth (Low, Medium, High): how deeply the journalist digs for information
+- Verification Strictness (Low, Medium, High): how rigorously facts are checked before publishing
+- Sensationalism Level (Low, Medium, High): tendency to dramatize or exaggerate
+- Bias (Pro-Company, Neutral, Anti-Company): editorial slant toward HappyTuna
+- Independence (Low, Medium, High): reliance on official sources vs independent investigation
+- Persistence (Low, Medium, High): how hard the journalist pursues a story
+- Public Interest Focus (Low, Medium, High): priority given to public safety over other angles
+- Source Reliance (Official Sources, Mixed Sources, Anonymous Sources): where information comes from
+- Credibility (Low, Medium, High): audience trust in the journalist
+- Speed of Publication (Slow, Moderate, Fast): how quickly articles are published
+- Narrative Influence (Low, Medium, High): impact of articles on public perception
+
+Our journalist profile: Neutral bias, High verification strictness, High investigative depth, Mixed sources, High credibility, Moderate publication speed, High public interest focus.

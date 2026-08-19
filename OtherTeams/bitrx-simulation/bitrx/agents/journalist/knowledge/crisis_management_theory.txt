@@ -1,0 +1,164 @@
+CRISIS MANAGEMENT THEORY — JOURNALIST REFERENCE
+Source: Crisis Management and Decision-Making Under Uncertainty
+
+---
+
+WHAT IS AN ORGANIZATIONAL CRISIS?
+
+An organizational crisis is a significant, non-routine event that creates high uncertainty and threatens important organizational objectives, stakeholder safety, reputation, financial stability, or continued operations.
+
+Key characteristics of a crisis:
+- Uncertainty: facts may be incomplete, contradictory, or changing
+- Time pressure: delayed action increases harm and reduces options
+- High consequences: people, products, finances, reputation may be affected
+- Multiple stakeholders: different groups demand different information
+- Public visibility: private operational problems rapidly become public reputational crises
+- Non-routine decisions: established procedures may be insufficient
+
+Important distinction: Not every serious failure is a crisis. A contained malfunction may remain an incident. It becomes a crisis when it threatens core objectives, spreads across systems, or undermines confidence in the organization.
+
+---
+
+TYPES OF CRISES
+
+Safety / product crisis:
+- Contamination, dangerous defect, product recall
+- Primary concern: protect people, contain exposure, cooperate with authorities
+- Example: salmonella found in canned food products
+
+Operational crisis:
+- Factory shutdown, service outage, logistics failure
+- Primary concern: maintain critical functions and restore capacity
+
+Reputational crisis:
+- Rumors, misconduct allegations, viral criticism
+- Primary concern: establish facts and maintain credibility
+
+Regulatory / legal crisis:
+- Investigation, compliance breach, penalty
+- Primary concern: meet obligations and demonstrate corrective action
+
+---
+
+CRISIS PHASES (Coombs Framework)
+
+Phase 1 — Pre-crisis:
+Detect signals, reduce risks, prepare plans, assign responsibilities, train the response team.
+
+Phase 2 — Crisis response:
+Protect people, contain damage, gather facts, communicate, coordinate stakeholders.
+
+Phase 3 — Post-crisis:
+Restore operations and reputation, investigate causes, support affected stakeholders, implement lessons.
+
+---
+
+DECISION-MAKING UNDER UNCERTAINTY
+
+A disciplined decision sequence for organizations facing a crisis:
+1. Define what must be decided now vs what can wait
+2. Identify affected people, assets, obligations, and time constraints
+3. Separate verified facts, unverified reports, assumptions, and unknowns
+4. Generate multiple plausible explanations for the event
+5. Generate multiple response options including reversible temporary actions
+6. Compare options by safety, legal duty, operational impact, trust, cost, reversibility
+7. Assign a challenger to test assumptions and worst-case consequences
+8. Decide, communicate the rationale, monitor outcomes
+
+Common decision-making failures to watch for in company responses:
+- Confirmation bias: selecting evidence that supports the preferred explanation
+- Single-theory thinking: using one explanation as if it were proven
+- Absence of alternatives: treating the first proposal as the only choice
+- Groupthink: suppressing disagreement to preserve consensus
+- Environmental pressure: allowing media or investor demands to replace evidence-based analysis
+
+Reversibility principle:
+When uncertainty is high and potential harm is serious, prefer temporary actions that reduce exposure while preserving future options. Examples: quarantine a batch, pause one production line, issue a precautionary notice, initiate independent testing.
+
+---
+
+CRISIS COMMUNICATION STANDARDS
+
+What good crisis communication looks like:
+- Speed: acknowledge the event before information gaps are filled by speculation
+- Accuracy: distinguish confirmed facts from preliminary information
+- Consistency: coordinate messages across all channels — website, email, media, regulators
+- Empathy: recognize harm, fear, and legitimate stakeholder concerns
+- Action orientation: explain what is being done now, not only what is being investigated
+- Update rhythm: state when the next update will be provided
+- Accessibility: communicate in language the audience can understand
+
+What bad crisis communication looks like:
+- Silence while facts are unknown (allows others to define the narrative)
+- Defensive responses when evidence suggests management failure
+- Inconsistent statements across different channels
+- No acknowledgment of harm to affected people
+- Vague statements without concrete actions or timelines
+
+Situational Crisis Communication Theory (SCCT):
+The more responsibility stakeholders attribute to the organization, the stronger the need for corrective action, apology, compensation, and evidence of change. Defensive responses are especially risky when evidence suggests preventability or management failure.
+
+---
+
+WHAT JOURNALISTS SHOULD LOOK FOR IN A CRISIS
+
+Signs of good crisis management by a company:
+- Early acknowledgment of the problem
+- Transparent communication with regulators
+- Proactive recall or containment before being forced
+- Regular public updates with specific facts
+- CEO visible and accountable
+- Corrective actions announced with timelines
+
+Signs of poor crisis management by a company:
+- Delayed acknowledgment or silence
+- Minimizing the severity of the problem
+- Blaming external factors without evidence
+- Inconsistent statements to different stakeholders
+- No visible leadership response
+- Waiting for regulatory action before acting
+
+Key questions journalists should ask during a food safety crisis:
+1. When did the company first know about the problem?
+2. What actions did they take immediately upon discovery?
+3. Which batches and products are affected?
+4. Have products already reached consumers?
+5. What are the health risks to consumers?
+6. Has the regulator been notified?
+7. What is the company doing to prevent recurrence?
+8. Is the CEO taking personal responsibility?
+
+---
+
+LESSONS FROM MAJOR CORPORATE CRISES
+
+Boeing 737 MAX lessons:
+- Safety-critical warnings must not be weakened by schedule, competition, or financial pressure
+- Technical problems become reputational crises when communication appears delayed or defensive
+- Recovery requires technical correction, transparent validation, and sustained evidence of change
+- Regulatory compliance is a minimum requirement, not a substitute for organizational responsibility
+
+Coca-Cola New Coke lessons:
+- A measurement can be accurate but incomplete — consumer data did not capture emotional attachment
+- Minority objections may signal concentrated, high-intensity risk even when average results are favorable
+- Leaders should preserve reversibility when a decision affects a core brand relationship
+- A rapid correction can limit long-term damage when management recognizes the mistake
+
+Combined lesson:
+Data, expertise, and formal procedures are necessary but insufficient. Leaders must test assumptions, protect dissent, understand stakeholder meaning, communicate early, and be willing to change course when evidence contradicts the original plan.
+
+---
+
+EARLY WARNING SIGNALS IN FOOD SAFETY
+
+A warning signal does not need to prove that a crisis exists. Its purpose is to justify investigation, temporary safeguards, or escalation before certainty is available.
+
+Common early warning signals in food manufacturing:
+- Unusual quality lab results, even if inconclusive
+- Worker complaints about production conditions
+- Increase in customer complaints about product quality
+- Regulatory inquiry or routine inspection request
+- Social media discussion about product safety
+- Supplier issues affecting raw material quality
+
+Crisis-prone organizations dismiss weak signals because they do not fit the dominant explanation or because cost and schedule pressure override risk indicators.

@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets — NEVER commit. .env holds a live API key; .env.example is the template.
+.env
+.env.*
+!.env.example
+
+# Build output
+# backend: tsc -> dist/   |   frontend: vite build -> public/app/ (rebuild: cd client && npm run build)
+dist/
+public/app/
+*.tsbuildinfo
+
+# Local SQLite databases (generated). NOTE: prisma/migrations/ IS committed (schema history);
+# only the generated .db files are ignored.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Bind-mounted persistent data for `docker run -v ./data:/app/data` (see README's Docker section)
+/data/
+
+# Test & coverage output
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Screenshots / scratch artifacts
+.preview-*.png
+
+# Internal planning docs — kept locally, not shared in the repo
+docs/PLAN.md
+docs/TASKS.md
+docs/phase6-narrative-shapers.md
+MCP_PLAN.md
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

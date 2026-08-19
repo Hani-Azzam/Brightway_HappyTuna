@@ -1,0 +1,130 @@
+# What each role is allowed to see and call.
+#
+# Kept separate from mcp_servers.yaml on purpose. The two files answer different
+# questions, change for different reasons, and fail in different ways:
+#
+#   mcp_servers.yaml  where the servers are. Changes when infrastructure changes
+#                     (a port moves, a team ships a service). A mistake here
+#                     breaks connectivity loudly and immediately.
+#   roles.yaml        what the agent may do. Changes when the research design
+#                     changes. A mistake here is silent -- the simulation still
+#                     runs, it just measures a CEO with the wrong powers.
+#
+# The second kind of mistake is the one that quietly invalidates a study, so this
+# file is kept small and reviewable on its own rather than buried under server
+# URLs. It also keeps mcp_servers.yaml's invariant intact: URLs live there and
+# nothing else does.
+#
+# Matching rules (enforced in gateway/policy.py):
+#   - deny always beats allow.
+#   - deny entries must be exact "server.tool" names. Wildcards are rejected at
+#     load time: search, get_post, and get_hashtag_posts each exist on two
+#     servers, so a pattern deny can revoke the wrong one or silently match
+#     nothing at all.
+#   - allow entries may be exact names or "server.*" for a whole server.
+#   - anything matching neither is denied.
+
+version: 1
+
+roles:
+  ceo:
+    description: >-
+      The CEO agent under study. Reads the company's own systems and the public
+      conversation, responds through support tickets and public posts. It must
+      never be able to manufacture the public it is judged on, nor to alter the
+      instruments that measure it.
+
+    allow:
+      # Full read of the company's own support queue, plus the ability to
+      # respond, reassign, and escalate. create_ticket is denied below.
+      - "support.*"
+
+      # The full research surface: opinion index, crisis meter, cohorts,
+      # narratives, spike detection, top influencers. run_analysis and
+      # set_ai_analysis are denied below -- they are operator controls, not
+      # things a CEO can do. Note get_top_influencers lives here, on analytics,
+      # and is already covered by this wildcard.
+      - "analytics.*"
+
+      # The public voice. These are the only two irreversible actions in the
+      # catalog: both are public on landing and neither has an undo tool
+      # anywhere. See TOOL_ACCESS in gateway/catalog.py.
+      - "social.create_post"
+      - "social.add_comment"
+
+      # Reading the room. Deliberately excludes the engagement writes
+      # (like/repost/follow) -- a CEO liking posts during a contamination
+      # crisis is not a communication channel, it is noise in the data.
+      - "social.get_global_feed"
+      - "social.get_post"
+      - "social.get_comments"
+      - "social.search"
+      - "social.get_trending_hashtags"
+      - "social.get_user"
+
+      # The internal channel: read the org's own chat, speak in it, and convene.
+      #
+      # Neither deny rationale in this file reaches chat. It is internal: absent
+      # from every analytics number and invisible to the simulated public, so it
+      # can neither fabricate the public the CEO is judged on nor alter the
+      # instruments measuring it.
+      #
+      # create_channel and add_member are granted for a positive reason, not
+      # merely an absent objection. Without them the CEO can reply internally but
+      # can only *initiate* publicly -- its one way to start a conversation
+      # nobody else started would be social.create_post. That is a tool surface
+      # that quietly steers a crisis response toward public action, and the trace
+      # would read the result as the model's disposition rather than this file's.
+      # "Convened the right people internally before speaking publicly" is a
+      # response the study should be able to observe, so the surface has to be
+      # able to express it. add_member is part of the same decision: the server
+      # scopes it to channels the caller owns, and without it a mis-seeded
+      # incident channel cannot be corrected.
+      #
+      # Still a named-tool grant rather than "chat.*", so anything that team adds
+      # later stays invisible until someone decides otherwise.
+      #
+      # GOTCHA: neither has an inverse -- there is no delete_channel and no
+      # remove_member anywhere on this server -- so channels and memberships
+      # accrete across runs. The chat stack needs resetting between trials or
+      # trial N starts with N-1 incident channels. See README gotchas.
+      - "chat.list_channels"
+      - "chat.read_channel"
+      - "chat.send_message"
+      - "chat.create_channel"
+      - "chat.add_member"
+
+      # Removed: "social.get_top_influencers" -- no such tool. get_top_influencers
+      # is served by analytics, not social, and the "analytics.*" entry above
+      # already grants it. Left recorded here because the intent was right and
+      # the surface is unchanged either way: under default-deny a rule matching
+      # nothing grants nothing. policy.py reports rules like this at load time.
+
+    deny:
+      # Connection-layer operations, owned by connection.py. login rebinds the
+      # session identity, silently re-authoring every subsequent write;
+      # set_account_type moves the agent between analytics cohorts and changes
+      # what get_cohort_sentiment reports about the company's own voice. Neither
+      # is in the allow list, so default-deny already hides them -- these entries
+      # are the backstop, so that a future widening of the allow list (e.g. to
+      # "social.*") cannot expose them by accident.
+      - "social.login"
+      - "social.set_account_type"
+
+      # Same reason as social.login, on the other identity-bearing server:
+      # chat.login rebinds which agent this session *is*, silently re-authoring
+      # every later message. connection.py runs it once at connect time from
+      # mcp_servers.yaml; the LLM never sees it and must never call it.
+      - "chat.login"
+
+      # Simulation-operator controls. run_analysis recomputes the stored
+      # sentiment the CEO is scored against; set_ai_analysis swaps the scoring
+      # engine outright. A CEO able to call either is grading its own exam.
+      - "analytics.run_analysis"
+      - "analytics.set_ai_analysis"
+
+      # Filing a support ticket means inventing a customer complaint. That is
+      # fabricating the public the CEO is being evaluated on -- the same reason
+      # customer-agent is excluded from the registry entirely. Responding to
+      # real tickets stays available via support.patch_ticket.
+      - "support.create_ticket"

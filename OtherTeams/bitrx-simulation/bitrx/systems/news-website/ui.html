@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Daily Catch — Live News Feed</title>
+<style>
+  :root {
+    --red: #C0392B;
+    --red-dark: #922B21;
+    --ink: #1a1a1a;
+    --ink-mid: #3d3d3d;
+    --ink-muted: #6b6b6b;
+    --rule: #d4d4d4;
+    --bg: #f5f4f0;
+    --card: #ffffff;
+    --breaking-bg: #C0392B;
+    --badge-investigative: #1a3a5c;
+    --badge-update: #2c6b3a;
+    --badge-opinion: #6b4c1a;
+    --badge-breaking: #C0392B;
+    --font-serif: 'Georgia', 'Times New Roman', serif;
+    --font-sans: 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── Masthead ── */
+  .masthead {
+    background: var(--card);
+    border-bottom: 3px solid var(--ink);
+    padding: 0;
+  }
+  .masthead-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .masthead-logo {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: bold;
+    letter-spacing: -1px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .masthead-logo span { color: var(--red); }
+  .masthead-meta {
+    text-align: right;
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+  .masthead-meta strong {
+    display: block;
+    font-size: 13px;
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  /* ── Search bar ── */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: var(--font-sans);
+    background: var(--card);
+    color: var(--ink);
+    outline: none;
+  }
+  .search-bar input:focus { border-color: var(--ink); }
+  .search-bar button {
+    padding: 8px 18px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    letter-spacing: .3px;
+  }
+  .search-bar button:hover { background: var(--red); }
+  .clear-btn {
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-size: 13px;
+    cursor: pointer;
+    display: none;
+  }
+  .clear-btn.visible { display: block; }
+
+  /* ── Category filters ── */
+  .cat-filters {
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    background: var(--card);
+    border-bottom: 1px solid var(--rule);
+    overflow-x: auto;
+  }
+  .cat-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: .2px;
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .cat-btn:hover { color: var(--ink); }
+  .cat-btn.active { color: var(--red); border-bottom-color: var(--red); }
+
+  /* ── Ticker (breaking news) ── */
+  .ticker-wrap {
+    background: var(--breaking-bg);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    height: 34px;
+  }
+  .ticker-label {
+    background: var(--red-dark);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 0 14px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,.2);
+  }
+  .ticker-track {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    animation: ticker 30s linear infinite;
+    font-size: 13px;
+    padding-left: 20px;
+  }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ── Layout ── */
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 24px 48px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 32px;
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Sim clock ── */
+  .sim-clock {
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    border-radius: 2px;
+  }
+  .sim-clock .label { color: rgba(255,255,255,.5); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+  .sim-clock .val { color: #fff; font-weight: 500; }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #2ecc71;
+    display: inline-block;
+    animation: pulse 1.8s ease-in-out infinite;
+    margin-right: 6px;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── Article cards ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-label span { font-size: 11px; color: var(--ink-muted); font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+  .article-list { display: flex; flex-direction: column; gap: 1px; }
+
+  .article-card {
+    background: var(--card);
+    padding: 20px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: border-color .15s;
+    position: relative;
+  }
+  .article-card:hover { border-left-color: var(--red); }
+  .article-card.breaking { border-left-color: var(--red); background: #fdf5f5; }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .cat-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 1px;
+    color: #fff;
+  }
+  .cat-badge.breaking { background: var(--badge-breaking); }
+  .cat-badge.investigative { background: var(--badge-investigative); }
+  .cat-badge.update { background: var(--badge-update); }
+  .cat-badge.opinion { background: var(--badge-opinion); }
+  .card-time { font-size: 11px; color: var(--ink-muted); margin-left: auto; }
+  .card-author { font-size: 11px; color: var(--ink-muted); }
+
+  .card-title {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: bold;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .article-card:hover .card-title { color: var(--red); }
+  .card-body {
+    font-size: 14px;
+    color: var(--ink-mid);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--rule);
+    border-radius: 1px;
+    color: var(--ink-muted);
+  }
+  .card-views {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+
+  /* ── Full article modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 100;
+    overflow-y: auto;
+    padding: 40px 16px;
+  }
+  .modal-overlay.open { display: block; }
+  .modal {
+    background: var(--card);
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 36px 40px;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    font-size: 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-muted);
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--red); }
+  .modal-badge-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    font-weight: bold;
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  .modal-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 20px; border-bottom: 1px solid var(--rule); padding-bottom: 16px; }
+  .modal-body { font-size: 15px; line-height: 1.8; color: var(--ink-mid); white-space: pre-wrap; }
+  .modal-tags { margin-top: 20px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--rule); padding-top: 16px; }
+
+  /* ── Sidebar ── */
+  .sidebar { display: flex; flex-direction: column; gap: 24px; }
+  .sidebar-block { background: var(--card); padding: 16px; }
+  .sidebar-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink); border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 12px;
+  }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-val { font-weight: 700; font-family: var(--font-serif); font-size: 16px; }
+  .recent-item { padding: 8px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item-title { font-size: 13px; line-height: 1.4; color: var(--ink); margin-bottom: 3px; }
+  .recent-item:hover .recent-item-title { color: var(--red); }
+  .recent-item-time { font-size: 11px; color: var(--ink-muted); }
+
+  /* ── States ── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--ink-muted); font-family: var(--font-serif); font-size: 18px; font-style: italic;
+  }
+  .loading { text-align: center; padding: 40px; color: var(--ink-muted); font-size: 14px; }
+  .refresh-note { font-size: 11px; color: var(--ink-muted); text-align: right; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-top">
+    <a class="masthead-logo" href="#">The Daily<span>Catch</span></a>
+    <div class="masthead-meta">
+      <strong id="sim-date-header">Loading simulation time...</strong>
+      <span id="real-date-header"></span>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search articles — try 'salmonella', 'recall', 'HappyTuna'..." />
+    <button onclick="doSearch()">Search</button>
+    <button class="clear-btn" id="clear-btn" onclick="clearSearch()">Clear</button>
+  </div>
+
+  <div class="cat-filters">
+    <button class="cat-btn active" onclick="filterCat(null, this)">All</button>
+    <button class="cat-btn" onclick="filterCat('breaking', this)">Breaking</button>
+    <button class="cat-btn" onclick="filterCat('investigative', this)">Investigative</button>
+    <button class="cat-btn" onclick="filterCat('update', this)">Updates</button>
+    <button class="cat-btn" onclick="filterCat('opinion', this)">Opinion</button>
+  </div>
+</div>
+
+<div class="ticker-wrap" id="ticker-wrap" style="display:none">
+  <div class="ticker-label">Breaking</div>
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="layout">
+  <main>
+    <div class="sim-clock">
+      <div><span class="live-dot"></span><span class="label">Sim time</span><span class="val" id="sim-time-clock">—</span></div>
+      <div><span class="label">Speed</span><span class="val" id="sim-speed">—</span></div>
+      <div><span class="label">Real time</span><span class="val" id="real-time-clock">—</span></div>
+    </div>
+
+    <div class="section-label">
+      Latest news
+      <span id="article-count"></span>
+    </div>
+    <p class="refresh-note">Auto-refreshes every 15 seconds</p>
+
+    <div class="article-list" id="article-list">
+      <div class="loading">Loading articles...</div>
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-block">
+      <div class="sidebar-title">Newsroom stats</div>
+      <div class="stat-row"><span>Total articles</span><span class="stat-val" id="stat-total">—</span></div>
+      <div class="stat-row"><span>Breaking news</span><span class="stat-val" id="stat-breaking">—</span></div>
+      <div class="stat-row"><span>Investigative</span><span class="stat-val" id="stat-invest">—</span></div>
+      <div class="stat-row"><span>Updates</span><span class="stat-val" id="stat-update">—</span></div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-title">Most viewed</div>
+      <div id="most-viewed"></div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-title">About</div>
+      <p style="font-size:13px;line-height:1.6;color:var(--ink-muted)">
+        The Daily Catch is an independent news outlet covering food industry, public health, and consumer affairs.
+        Articles published here shape how all agents perceive the unfolding crisis.
+      </p>
+    </div>
+  </aside>
+</div>
+
+<!-- Article modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-badge-row">
+      <span class="cat-badge" id="modal-cat"></span>
+    </div>
+    <h1 class="modal-title" id="modal-title"></h1>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-tags" id="modal-tags"></div>
+  </div>
+</div>
+
+<script>
+  let allArticles = [];
+  let currentCat = null;
+  let currentSearch = '';
+  let refreshTimer;
+
+  async function fetchClock() {
+    try {
+      const r = await fetch('/time-proxy');
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('sim-time-clock').textContent = d.sim_time_human || d.sim_time;
+      document.getElementById('sim-speed').textContent = `${d.speed_multiplier}× real time`;
+      document.getElementById('real-time-clock').textContent = new Date(d.real_time).toUTCString().replace(' GMT','');
+      const simDate = new Date(d.sim_time);
+      document.getElementById('sim-date-header').textContent = simDate.toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      document.getElementById('real-date-header').textContent = 'Simulation — ' + simDate.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+    } catch(e) {
+      document.getElementById('sim-time-clock').textContent = 'NTP unavailable';
+    }
+  }
+
+  async function fetchArticles() {
+    try {
+      const r = await fetch('/articles?limit=50');
+      allArticles = await r.json();
+      renderArticles();
+      updateStats();
+      renderMostViewed();
+      updateTicker();
+    } catch(e) {
+      document.getElementById('article-list').innerHTML = '<div class="empty-state">Could not load articles.</div>';
+    }
+  }
+
+  function renderArticles() {
+    let filtered = allArticles;
+    if (currentCat) filtered = filtered.filter(a => a.category === currentCat);
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      filtered = filtered.filter(a =>
+        a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q)
+      );
+    }
+
+    document.getElementById('article-count').textContent = `${filtered.length} article${filtered.length !== 1 ? 's' : ''}`;
+
+    if (!filtered.length) {
+      document.getElementById('article-list').innerHTML = '<div class="empty-state">No articles found.</div>';
+      return;
+    }
+
+    document.getElementById('article-list').innerHTML = filtered.map(a => `
+      <div class="article-card ${a.category === 'breaking' ? 'breaking' : ''}" onclick="openArticle('${a.id}')">
+        <div class="card-top">
+          <span class="cat-badge ${a.category}">${a.category}</span>
+          <span class="card-author">${a.author}</span>
+          <span class="card-time">${formatSimTime(a.published_at)}</span>
+        </div>
+        <div class="card-title">${a.title}</div>
+        <div class="card-body">${a.body}</div>
+        ${a.tags && a.tags.length ? `<div class="card-tags">${a.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>` : ''}
+        <span class="card-views">${a.views} views</span>
+      </div>
+    `).join('');
+  }
+
+  function updateStats() {
+    document.getElementById('stat-total').textContent = allArticles.length;
+    document.getElementById('stat-breaking').textContent = allArticles.filter(a => a.category === 'breaking').length;
+    document.getElementById('stat-invest').textContent = allArticles.filter(a => a.category === 'investigative').length;
+    document.getElementById('stat-update').textContent = allArticles.filter(a => a.category === 'update').length;
+  }
+
+  function renderMostViewed() {
+    const top = [...allArticles].sort((a,b) => b.views - a.views).slice(0,5);
+    document.getElementById('most-viewed').innerHTML = top.map(a => `
+      <div class="recent-item" onclick="openArticle('${a.id}')">
+        <div class="recent-item-title">${a.title}</div>
+        <div class="recent-item-time">${a.views} views · ${formatSimTime(a.published_at)}</div>
+      </div>
+    `).join('');
+  }
+
+  function updateTicker() {
+    const breaking = allArticles.filter(a => a.category === 'breaking');
+    const tickerWrap = document.getElementById('ticker-wrap');
+    if (!breaking.length) { tickerWrap.style.display = 'none'; return; }
+    tickerWrap.style.display = 'flex';
+    const text = breaking.map(a => `${a.title}  ·  `).join('') + breaking.map(a => `${a.title}  ·  `).join('');
+    document.getElementById('ticker-track').textContent = text;
+  }
+
+  async function openArticle(id) {
+    try {
+      const r = await fetch(`/articles/${id}`);
+      const a = await r.json();
+      document.getElementById('modal-cat').textContent = a.category;
+      document.getElementById('modal-cat').className = `cat-badge ${a.category}`;
+      document.getElementById('modal-title').textContent = a.title;
+      document.getElementById('modal-meta').textContent = `By ${a.author}  ·  ${formatSimTime(a.published_at)}  ·  ${a.views} views`;
+      document.getElementById('modal-body').textContent = a.body;
+      document.getElementById('modal-tags').innerHTML = (a.tags || []).map(t => `<span class="tag">#${t}</span>`).join('');
+      document.getElementById('modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const idx = allArticles.findIndex(x => x.id === id);
+      if (idx >= 0) allArticles[idx].views++;
+      updateStats();
+      renderMostViewed();
+    } catch(e) {}
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('modal')) return;
+    document.getElementById('modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function filterCat(cat, btn) {
+    currentCat = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderArticles();
+  }
+
+  function doSearch() {
+    currentSearch = document.getElementById('search-input').value.trim();
+    document.getElementById('clear-btn').classList.toggle('visible', !!currentSearch);
+    renderArticles();
+  }
+
+  function clearSearch() {
+    currentSearch = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('clear-btn').classList.remove('visible');
+    renderArticles();
+  }
+
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  function formatSimTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    } catch { return iso; }
+  }
+
+  function startRefresh() {
+    fetchClock();
+    fetchArticles();
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+      fetchClock();
+      fetchArticles();
+    }, 15000);
+  }
+
+  startRefresh();
+</script>
+</body>
+</html>

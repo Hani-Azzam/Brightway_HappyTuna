@@ -1,0 +1,7 @@
+# Audit logs are run artefacts, not source. They record what the agent tried to
+# do during a simulation run and can grow without bound.
+logs/
+
+__pycache__/
+*.py[cod]
+.venv/

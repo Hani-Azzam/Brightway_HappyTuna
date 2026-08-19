@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A platform identity. May be an AI user-bot (built by another team) or a human reader.
+// Security is out of scope for this simulation: there is no password — a name is the identity.
+// accountType is a free string (SQLite has no enums); allowed values: regular | influencer | journalist | official.
+model User {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  bio         String?
+  avatar      String?
+  accountType String    @default("regular")
+  createdAt   DateTime  @default(now())
+  posts       Post[]
+  comments    Comment[]
+  likes       Like[]
+  reposts     Repost[]
+  following   Follow[]  @relation("follower")
+  followers   Follow[]  @relation("following")
+}
+
+model Post {
+  id         String        @id @default(cuid())
+  content    String
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Quote-post: references the original post and carries its own commentary in `content`.
+  repostOfId String?
+  repostOf   Post?         @relation("QuoteReposts", fields: [repostOfId], references: [id], onDelete: SetNull)
+  quotedBy   Post[]        @relation("QuoteReposts")
+  createdAt  DateTime      @default(now())
+  // Analytics cache — populated on-demand by the sentiment engine (Phase 3).
+  sentimentScore  Float?
+  sentimentLabel  String?   // positive | neutral | negative
+  aspects         String?   // JSON map of aspectKey -> score
+  mentionsCompany Boolean   @default(false)
+  analyzedAt      DateTime?
+  analyzedBy      String?   // 'lexicon' | 'claude'
+  comments   Comment[]
+  likes      Like[]
+  reposts    Repost[]
+  hashtags   PostHashtag[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// A "like" on a post. One per (user, post).
+model Like {
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+}
+
+// A pure repost (amplification, no new text). Quote-posts are modeled as Posts with repostOfId.
+model Repost {
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+}
+
+model Hashtag {
+  id        String        @id @default(cuid())
+  tag       String        @unique
+  createdAt DateTime      @default(now())
+  posts     PostHashtag[]
+}
+
+// Join table linking posts to the hashtags parsed from their content.
+model PostHashtag {
+  postId    String
+  hashtagId String
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
