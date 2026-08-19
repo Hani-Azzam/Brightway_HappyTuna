@@ -79,14 +79,35 @@ def _event_brief(texts: list[str]) -> str:
 
 def _connect_gateway_with_retry(executor: ToolExecutor, role: str, dry_run: bool):
     """The platforms may still be booting when this container starts; keep
-    trying rather than launching a CEO with no tools."""
+    trying rather than launching a CEO with no tools.
+
+    A partial connection is retried too: setup_gateway_tools succeeds even when
+    a server is skipped (that resilience is right for a mid-simulation blip),
+    but at boot "the CEO chose not to act on social" and "social wasn't up yet"
+    must not look alike -- so we insist on every enabled server before starting.
+    On the final attempt a partial surface is accepted rather than crash-looping.
+    """
     for attempt in range(1, GATEWAY_RETRIES + 1):
         try:
-            return setup_gateway_tools(executor, role=role, dry_run=dry_run)
+            bridge = setup_gateway_tools(executor, role=role, dry_run=dry_run)
         except Exception as exc:  # noqa: BLE001
             logger.warning("gateway setup failed (attempt %d/%d): %s",
                            attempt, GATEWAY_RETRIES, exc)
             time.sleep(GATEWAY_RETRY_DELAY)
+            continue
+
+        missing = [s.server_id for s in bridge.statuses if s.enabled and not s.connected]
+        if not missing:
+            return bridge
+        if attempt == GATEWAY_RETRIES:
+            logger.warning("continuing with a partial tool surface; still down: %s",
+                           ", ".join(missing))
+            return bridge
+
+        logger.warning("gateway up but %s not connected yet (attempt %d/%d); retrying",
+                       ", ".join(missing), attempt, GATEWAY_RETRIES)
+        teardown_gateway_tools(bridge)
+        time.sleep(GATEWAY_RETRY_DELAY)
     raise RuntimeError("gateway never became reachable; giving up")
 
 
