@@ -5,8 +5,9 @@ site platform). It listens to `press` events from the event generator,
 investigates each one against a Chroma-backed knowledge base, publishes an
 article on the journalism site, and shares the headline on the social network.
 
-Built on a LangChain ReAct loop (`base/tool_agent.py`) with Gemini
-(`gemini-2.5-flash-lite`) and RAG over the bundled `knowledge/` docs.
+Built on a LangChain ReAct loop (`base/tool_agent.py`) with Claude Haiku and RAG
+over the bundled `knowledge/` docs. The knowledge base is embedded with Gemini --
+Anthropic has no embeddings API -- so this agent needs both keys.
 
 ## Personality
 
@@ -106,8 +107,9 @@ journalism-site social-network`.)
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `GEMINI_API_KEY` | — | **Required.** The agent's LLM + embeddings |
-| `JOURNALIST_MODEL` | `gemini-2.5-flash-lite` | Chat model |
+| `ANTHROPIC_API_KEY` | — | **Required.** The agent's reasoning model |
+| `GEMINI_API_KEY` | — | **Required.** Knowledge-base embeddings only |
+| `JOURNALIST_MODEL` | `claude-haiku-4-5` | Chat model |
 | `JOURNALIST_TEMPERATURE` | `0.2` | Low = factual |
 | `JOURNALIST_MAX_STEPS` | `12` | ReAct step budget |
 | `EVENT_GENERATOR_URL` | `http://localhost:8006` | Press feed (compose sets the docker-internal URL) |

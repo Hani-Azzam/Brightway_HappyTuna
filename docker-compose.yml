@@ -151,6 +151,9 @@ services:
       - .env
     environment:
       - SOCIAL_NETWORK_BASE_URL=http://social-network:3000
+      # stable-release branch: Claude Haiku like every other agent. Set here
+      # rather than in .env so it wins over any leftover NAT_CONFIG_FILE there.
+      - NAT_CONFIG_FILE=configs/config.haiku.yml
     # No volume either, on purpose: /app/state holds "last seen social post id"
     # cursors. Those ids only mean something to one social-network database, so
     # they must die with it -- a cursor that outlives the feed it points into is
@@ -168,6 +171,9 @@ services:
       - EVENT_GENERATOR_URL=http://event-generator:8000
       - NEWS_URL=http://journalism-site:8003
       - SOCIAL_URL=http://social-network:3000
+      # stable-release: pinned here, not in .env, so a .env carried over from
+      # main (where this held a Gemini model name) cannot break this branch.
+      - JOURNALIST_MODEL=claude-haiku-4-5
     depends_on:
       - event-generator
       - journalism-site
@@ -196,6 +202,9 @@ services:
       - .env
     environment:
       - EVENT_GENERATOR_URL=http://event-generator:8000
+      # stable-release: pinned here rather than in .env, same reason as the
+      # journalist above.
+      - CEO_MODEL_NAME=claude-haiku-4-5
       # The gateway resolves its MCP server URLs from mcp_servers.yaml; the
       # "docker" profile (the default) uses the service names above.
     volumes:

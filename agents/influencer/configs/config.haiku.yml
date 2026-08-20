@@ -1,0 +1,27 @@
+# NAT workflow config — Claude Haiku (the default on the stable-release branch).
+#
+# One provider and one key for the whole simulation, so a run never depends on
+# NVIDIA's shared NIM endpoint being healthy. Selected via
+# NAT_CONFIG_FILE=configs/config.haiku.yml (set on this service in
+# docker-compose.yml).
+#
+# `_type: openai` pointed at Anthropic's OpenAI-compatible endpoint: NAT ships
+# no native Anthropic LLM type, and this needs no extra dependency in the image.
+# Nothing outside this `llms:` block changes — the decision function and the
+# poller never name a provider.
+#
+# request_timeout keeps a stalled provider from wedging the poller.
+
+llms:
+  decision_llm:
+    _type: openai
+    model_name: claude-haiku-4-5
+    base_url: https://api.anthropic.com/v1/
+    api_key: ${ANTHROPIC_API_KEY}
+    temperature: 0.4
+    request_timeout: 45
+
+workflow:
+  _type: influencer_decision
+  llm_name: decision_llm
+  max_retries: 2

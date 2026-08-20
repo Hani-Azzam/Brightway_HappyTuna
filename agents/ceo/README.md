@@ -15,7 +15,7 @@ it sit the plan-solve agent (`agents/CEO_Agent.py`), sliding-window memory
 As part of the stack (recommended — this is what the container does):
 
 ```bash
-# from the repo root; .env needs GEMINI_API_KEY
+# from the repo root; .env needs ANTHROPIC_API_KEY
 docker compose up --build ceo-agent
 docker compose logs -f ceo-agent
 ```

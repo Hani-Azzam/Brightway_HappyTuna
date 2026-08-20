@@ -74,7 +74,7 @@ comments only.
 From the repo root:
 
 ```bash
-cp .env.example .env   # fill in NVIDIA_API_KEY (or OPENAI_API_KEY, see below)
+cp .env.example .env   # fill in ANTHROPIC_API_KEY
 docker compose up --build social-network influencer-agent
 ```
 
@@ -92,7 +92,7 @@ Swagger UI for the NAT workflow itself (useful for testing a decision in isolati
 cd agents/influencer
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate
 pip install -e .
-export NVIDIA_API_KEY=...                        # https://build.nvidia.com
+export ANTHROPIC_API_KEY=...                     # https://console.anthropic.com
 export SOCIAL_NETWORK_BASE_URL=http://localhost:3005
 export BASE_PERSONA_TEMPLATE_PATH=./docs/influencer_persona_prompt.md
 export STATE_DIR=./state
@@ -106,22 +106,23 @@ in which case use port 3000.)
 To exercise just the NAT workflow — no social_network, no poller — with a single post:
 
 ```bash
-nat run --config_file configs/config.nim.yml --input \
+nat run --config_file configs/config.haiku.yml --input \
   '{"persona_prompt": "You are a test persona.", "post_id": "p1", "post_author": "alice", "post_content": "HappyTuna recalled a batch today.", "company_name": "HappyTuna"}'
 ```
 
 ## Switching LLM provider
 
-Three config files are provided; only the `llms:` block differs between them:
+Four config files are provided; only the `llms:` block differs between them:
 
-- `configs/config.nim.yml` (default) — NVIDIA NIM, needs `NVIDIA_API_KEY`.
+- `configs/config.haiku.yml` (default on this branch) — Claude Haiku through Anthropic's
+  OpenAI-compatible endpoint, needs `ANTHROPIC_API_KEY`.
+- `configs/config.nim.yml` — NVIDIA NIM, needs `NVIDIA_API_KEY`.
 - `configs/config.openai.yml` — OpenAI, needs `OPENAI_API_KEY`.
 - `configs/config.gemini.yml` — Gemini through its OpenAI-compatible endpoint,
-  needs `GEMINI_API_KEY`. This is the fallback for when NIM's shared chat
-  endpoint is degraded (see the root README's "When an agent isn't reacting").
+  needs `GEMINI_API_KEY`.
 
-Select one via `NAT_CONFIG_FILE`, e.g. `NAT_CONFIG_FILE=configs/config.gemini.yml`
-in the repo-root `.env`, then `docker compose up -d influencer-agent`. Nothing
+Select one via `NAT_CONFIG_FILE`. On this branch `docker-compose.yml` pins it to
+`configs/config.haiku.yml` for this service, so change it there. Nothing
 outside the `llms:` block changes — the decision function and the poller never
 name a provider.
 

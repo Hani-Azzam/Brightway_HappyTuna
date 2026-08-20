@@ -55,9 +55,9 @@ GATEWAY_ROLE = "ceo"
 # README.md "What the CEO can do".
 GATEWAY_DRY_RUN = False
 
-LLM_API_KEY = os.getenv("GEMINI_API_KEY")
-LLM_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash-lite")
-LLM_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
+LLM_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+LLM_MODEL_NAME = os.getenv("CEO_MODEL_NAME", "claude-haiku-4-5")
+LLM_TEMPERATURE = float(os.getenv("CEO_TEMPERATURE", "0.7"))
 
 MAX_PLAN_STEPS = 13
 MAX_TOOL_RETRIES_PER_STEP = 7

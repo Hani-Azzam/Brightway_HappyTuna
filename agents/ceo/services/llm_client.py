@@ -1,16 +1,20 @@
 from dataclasses import dataclass
 
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 @dataclass
 class LlmConfig:
     api_key: str
-    model_name: str = "gemini-2.5-flash-lite"
+    model_name: str = "claude-haiku-4-5"
     temperature: float = 0.0
+    # Anthropic requires an explicit output cap and LangChain's default is 1024,
+    # which is enough to truncate a multi-step plan mid-JSON. Gemini, which this
+    # client used before, had no comparably tight default.
+    max_tokens: int = 4096
 
 
 class LlmClient:
@@ -22,10 +26,11 @@ class LlmClient:
         if not isinstance(config.temperature, (int, float)) or not (0.0 <= config.temperature <= 2.0):
             raise ValueError("LlmConfig.temperature must be between 0.0 and 2.0.")
 
-        self._llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
+        self._llm: ChatAnthropic = ChatAnthropic(
             model=config.model_name,
             api_key=config.api_key,
             temperature=config.temperature,
+            max_tokens=config.max_tokens,
         )
         self._parser = StrOutputParser()
 

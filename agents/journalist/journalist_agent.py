@@ -20,11 +20,15 @@ class JournalistConfig:
     All configuration for the Journalist agent.
     Loaded from environment variables with sensible defaults.
     """
+    # Two providers on purpose, on the stable-release branch: the reasoning model
+    # is Claude Haiku like every other agent, but Anthropic has no embeddings
+    # API, so the RAG knowledge base still embeds through Gemini.
+    anthropic_api_key: str
     gemini_api_key: str
     embedding_model: str = "models/gemini-embedding-001"
     # Embedded Chroma (langchain_chroma persist_directory) — no separate server.
     chroma_persist_dir: str = "/data/chroma"
-    model_name: str = "gemini-2.5-flash-lite"
+    model_name: str = "claude-haiku-4-5"
     temperature: float = 0.2      # low = more factual, less creative
     max_steps: int = 12
     max_answer_length: int = 800
@@ -34,10 +38,11 @@ class JournalistConfig:
     @classmethod
     def from_env(cls) -> "JournalistConfig":
         return cls(
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", ""),
             gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
             embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001"),
             chroma_persist_dir=os.getenv("CHROMA_PERSIST_DIR", "/data/chroma"),
-            model_name=os.getenv("JOURNALIST_MODEL", "gemini-2.5-flash-lite"),
+            model_name=os.getenv("JOURNALIST_MODEL", "claude-haiku-4-5"),
             temperature=float(os.getenv("JOURNALIST_TEMPERATURE", "0.2")),
             max_steps=int(os.getenv("JOURNALIST_MAX_STEPS", "12")),
         )
@@ -65,7 +70,7 @@ class JournalistAgent(ToolAgent):
     def __init__(self, config: JournalistConfig) -> None:
         # --- LLM ---
         llm_client = LlmClient(LlmConfig(
-            api_key=config.gemini_api_key,
+            api_key=config.anthropic_api_key,
             model_name=config.model_name,
             temperature=config.temperature,
         ))

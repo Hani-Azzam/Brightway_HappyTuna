@@ -26,8 +26,15 @@ def main():
     # Load config from .env
     config = JournalistConfig.from_env()
 
+    # Two keys, two jobs: Claude Haiku reasons, Gemini embeds the knowledge base
+    # (Anthropic has no embeddings API). Either one missing is fatal, so name the
+    # one that's missing instead of failing later inside the RAG pipeline.
+    if not config.anthropic_api_key:
+        print("\n ERROR: ANTHROPIC_API_KEY not set in .env file (the reasoning model)")
+        return
+
     if not config.gemini_api_key:
-        print("\n ERROR: GEMINI_API_KEY not set in .env file")
+        print("\n ERROR: GEMINI_API_KEY not set in .env file (knowledge-base embeddings)")
         return
 
     print(f"\n Model     : {config.model_name}")

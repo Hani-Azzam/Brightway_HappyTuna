@@ -3,7 +3,7 @@
 A standalone Python service that simulates a customer persona reacting to events during the
 HappyTuna food-safety crisis. It is built on the
 [NVIDIA NeMo Agent Toolkit](https://github.com/NVIDIA/NeMo-Agent-Toolkit) (`nvidia-nat`), calls
-a NIM-hosted model through [NeMo Guardrails](https://github.com/NVIDIA-NeMo/Guardrails), and —
+Claude Haiku through [NeMo Guardrails](https://github.com/NVIDIA-NeMo/Guardrails), and —
 when a persona decides to complain — files a **real** ticket in the separate Customer Support
 system, over MCP. It never touches that system's database directly.
 
@@ -34,7 +34,7 @@ system's tools). `main.py` runs both entry points at once, in one container:
           v                                            v
               register.py: customer_agent_decision
     1. loads the persona + its in-memory history (personas.py / personas.yaml)
-    2. builds a prompt (system_prompt.py) and calls a NIM model
+    2. builds a prompt (system_prompt.py) and calls Claude Haiku
        THROUGH NeMo Guardrails (guardrails_config/) -- input rail checks the
        event isn't a jailbreak, output rail checks the JSON is well-formed
        and the response stays in character
@@ -65,11 +65,11 @@ separate OS process, the other is `load_workflow` in `main.py`'s process), so th
 | `register.py` | The actual decision logic: builds the prompt, calls the guarded LLM, parses the JSON decision, files a ticket if needed, updates in-memory persona state. Registered as the NAT function `customer_agent_decision`. |
 | `personas.py` / `personas.yaml` | Persona data (attributes, description, `customer_id`) and its loader. Edit the YAML to tune personas -- no code changes needed. |
 | `system_prompt.py` | The full system prompt sent to the LLM: objectives, personality rules, decision process, and the required JSON output schema. |
-| `guardrails_config/config.yml`, `prompts.yml` | NeMo Guardrails config: which model to use (NIM), and the input/output check prompts (blocks jailbreaks, off-topic input, malformed output, and character breaks). |
+| `guardrails_config/config.yml`, `prompts.yml` | NeMo Guardrails config: which model to use (Claude Haiku), and the input/output check prompts (blocks jailbreaks, off-topic input, malformed output, and character breaks). |
 | `workflow.yml` | NAT's workflow config: wires the `customer_support` MCP function group (the real Customer Support MCP server) to the `customer_agent_decision` function. |
 | `pyproject.toml` | Makes this an installable package and registers `register.py` with NAT's plugin discovery via `[project.entry-points."nat.components"]` -- required for `nat mcp serve` to find it at all. |
 | `event_client.py` | Copied verbatim from `../../event-generator/event_client.py` (that service's own README recommends copying, not importing, so each consumer owns its transport code). `subscribe(*tags)` opens an SSE stream to the event-generator with auto-reconnect. |
-| `driver.py` | The autonomous loop: subscribes to the event-generator via `event_client.subscribe("customer")`, and for every event, calls `customer_agent_decision` once per persona, sequentially (not gathered -- kinder to NIM rate limits and avoids concurrent writes to `register.py`'s `_memory` dict). Drives the workflow in-process via `nat.runtime.loader.load_workflow`, the same way `test_workflow.py` does, rather than looping back through `nat mcp serve` over the network. |
+| `driver.py` | The autonomous loop: subscribes to the event-generator via `event_client.subscribe("customer")`, and for every event, calls `customer_agent_decision` once per persona, sequentially (not gathered -- kinder to provider rate limits and avoids concurrent writes to `register.py`'s `_memory` dict). Drives the workflow in-process via `nat.runtime.loader.load_workflow`, the same way `test_workflow.py` does, rather than looping back through `nat mcp serve` over the network. |
 | `main.py` | Container entrypoint. Starts `nat mcp serve` as a subprocess (on-demand path) and runs `driver.py`'s loop in this process (autonomous path) side by side. Mirrors `../influencer-agent/src/influencer_agent/main.py`'s shape (NAT front end as a subprocess, driving loop in-process). |
 | `Dockerfile` | `python:3.11-slim`, `pip install .` (not `-r requirements.txt` -- see above), then `python main.py`. |
 | `test_workflow.py` | In-process test of the decision logic against a **real** Customer Support MCP server, with the LLM call mocked. |
@@ -112,13 +112,13 @@ untrusted `event` input and that real system.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `NVIDIA_API_KEY` | — | **Required.** Used by NeMo Guardrails' NIM engine (`guardrails_config/config.yml`) to actually call the model. Get one at https://build.nvidia.com. Set it in the repo-root `.env` (shared by every service via `env_file: .env` in `docker-compose.yml`). |
+| `ANTHROPIC_API_KEY` | — | **Required.** The decision model. `guardrails_config/config.yml` names it via `api_key_env_var`, and reaches Claude Haiku through Anthropic's OpenAI-compatible endpoint (this framework's default LLM path only speaks the OpenAI wire format). Get one at https://console.anthropic.com. Set it in the repo-root `.env` (shared by every service via `env_file: .env` in `docker-compose.yml`). |
 | `CUSTOMER_SUPPORT_MCP_URL` | `http://customer-support-mcp:8010/mcp` | Where the real Customer Support MCP server is. The default assumes Docker Compose's internal DNS; override to `http://localhost:8010/mcp` when running this service outside Docker against a Dockerized Customer Support system. |
 | `SOCIAL_NETWORK_MCP_URL` | `http://social-network:3000/mcp/social` | The social network's participation MCP server, used by `social_mcp.py` to publish a persona's public posts. Override to `http://localhost:3005/mcp/social` off-compose. |
 | `PERSONAS_CONFIG_PATH` | `/app/personas.yaml` (set in the Dockerfile) | Where `personas.py` reads persona data from. Needed explicitly because once this package is `pip install`-ed (not run as loose script files), `personas.py`'s own directory is inside `site-packages`, not `/app` -- see "Testing" below. |
 | `EVENT_GENERATOR_URL` | `http://localhost:8006` (`event_client.py`'s default) | Where the event-generator service is. Set to `http://event-generator:8000` in `docker-compose.yml` (Docker's internal DNS + in-container port, not the host-mapped `8006`). `driver.py` uses this via `event_client.subscribe(...)`. |
 | `CUSTOMER_AGENT_EVENT_TAGS` | `customer` (`driver.py`'s default) | Comma-separated event-generator tags the autonomous driver reacts to. The generator emits `customer` and `press` in both its scripted and LLM-generated modes; only `customer` is subscribed by default, and an unrecognised tag here means the driver connects and then silently receives nothing. |
-| `CUSTOMER_LLM_ENGINE` / `CUSTOMER_LLM_MODEL` / `CUSTOMER_LLM_BASE_URL` / `CUSTOMER_LLM_API_KEY` | unset (= NIM + `meta/llama-3.1-8b-instruct`, as committed in `guardrails_config/config.yml`) | Repoints the decision model at any OpenAI-compatible endpoint without editing the guardrails config -- `register.py`'s `_apply_llm_overrides` patches the loaded `RailsConfig`. Exists so a NIM outage doesn't stop the customer half of the simulation; see the "NIM outage escape hatch" block in the repo-root `.env`. Unset variables change nothing. |
+| `CUSTOMER_LLM_ENGINE` / `CUSTOMER_LLM_MODEL` / `CUSTOMER_LLM_BASE_URL` / `CUSTOMER_LLM_API_KEY` | unset (= Claude Haiku, as committed in `guardrails_config/config.yml`) | Repoints the decision model at any other OpenAI-compatible endpoint without editing the guardrails config -- `register.py`'s `_apply_llm_overrides` patches the loaded `RailsConfig`. Exists so a provider outage doesn't stop the customer half of the simulation. Unset variables change nothing. |
 | `CUSTOMER_AGENT_VERBOSE` | `false` | `true` restores Colang's per-event INFO logging (~60 lines per persona per event). Off by default so `docker compose logs customer-agent` shows one line per persona: `persona=... action=... ticket=... post=...`. |
 
 ### When the model provider is down
@@ -136,7 +136,7 @@ failing provider produces one line per persona —
 From the repo root:
 
 ```bash
-cp .env.example .env   # fill in NVIDIA_API_KEY, once
+cp .env.example .env   # fill in ANTHROPIC_API_KEY, once
 docker compose up --build -d event-generator customer-support-mcp customer-support-api social-network customer-agent
 ```
 
@@ -204,7 +204,7 @@ inside the container itself, it's `8000`.)
 cd agents/customer
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate
 pip install -e .
-export NVIDIA_API_KEY=...                         # https://build.nvidia.com
+export ANTHROPIC_API_KEY=...                      # https://console.anthropic.com
 export CUSTOMER_SUPPORT_MCP_URL=http://localhost:8010/mcp
 export SOCIAL_NETWORK_MCP_URL=http://localhost:3005/mcp/social
 nat mcp serve --config_file workflow.yml --host 0.0.0.0 --port 8000 --tool_names customer_agent_react
@@ -218,7 +218,7 @@ nat mcp serve --config_file workflow.yml --host 0.0.0.0 --port 8000 --tool_names
 Two test files, covering different things:
 
 - **`python test_workflow.py`** -- runs the decision logic in-process, against a **real**
-  running Customer Support MCP server, with only the LLM call mocked (no `NVIDIA_API_KEY`
+  running Customer Support MCP server, with only the LLM call mocked (no `ANTHROPIC_API_KEY`
   needed). It does `import register` directly, which means it does **not** exercise NAT's
   plugin/entry-point discovery -- it can't catch a packaging regression.
 - **`python test_packaging.py`** -- the packaging regression test. It installs this package
@@ -232,7 +232,7 @@ Two test files, covering different things:
   `PERSONAS_CONFIG_PATH` env var set in the Dockerfile. This test proves the failure still
   reproduces if that env var were ever removed, then proves it's fixed.
 
-Neither test makes a real call to the NIM model. To verify that (and the real
+Neither test makes a real call to the model. To verify that (and the real
 `nat mcp serve` + `--tool_names` + entry-point-discovery path end to end), build and run the
 actual image and call it as a real MCP client, e.g. the snippet under "Calling it directly"
 above, run from inside the container:

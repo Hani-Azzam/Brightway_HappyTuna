@@ -1,10 +1,10 @@
 # HappyTuna — a multi-agent crisis simulation
 
-> [!CAUTION]
-> **All NIM Ollama model servers will be deprecated on 25.08.2026.** The customer
-> and influencer agents run on NVIDIA NIM — see
-> [when an agent isn't reacting](docs/architecture.md#when-an-agent-isnt-reacting)
-> to repoint them at another provider.
+> [!NOTE]
+> **`stable-release` branch — every agent runs Claude Haiku.** One provider, one
+> key, no dependency on NVIDIA's NIM servers (which are being deprecated on
+> 25.08.2026). `main` keeps the original mixed roster: NIM for the customer and
+> influencer agents, Gemini for the journalist and CEO.
 
 **HappyTuna** is a fictional canned-tuna company having a food-safety crisis.
 LLM agents — customers, an influencer, a journalist, employees, and a CEO — live
@@ -46,12 +46,13 @@ docker compose logs -f customer-agent journalist-agent ceo-agent
 
 | Key | Used by | Get one at |
 |---|---|---|
-| `NVIDIA_API_KEY` | customer agent, influencer agent, event generator (all `llama-3.1-8b`) | https://build.nvidia.com |
-| `GEMINI_API_KEY` | journalist + CEO (`gemini-2.5-flash-lite`) | https://aistudio.google.com |
-| `ANTHROPIC_API_KEY` | employee agents (`claude-haiku-4-5`) | https://console.anthropic.com |
+| `ANTHROPIC_API_KEY` | **all five agents** + the event generator (`claude-haiku-4-5`) | https://console.anthropic.com |
+| `GEMINI_API_KEY` | the journalist's knowledge-base embeddings only | https://aistudio.google.com |
 
-A missing key doesn't break the stack — only the agents that need it, and only
-when they try to think. Every model here is deliberately small and fast.
+Anthropic has no embeddings API, so the journalist reasons with Haiku but embeds
+its RAG knowledge base with Gemini — the one place a second key is needed. A
+missing key doesn't break the stack, only the agents that need it, and only when
+they try to think.
 
 ## The cast
 

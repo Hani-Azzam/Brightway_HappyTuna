@@ -25,7 +25,7 @@ import time
 
 from event_broker import Event
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_anthropic import ChatAnthropic
 
 # The scripted mode. Twelve events - one customer, one press - through the six
 # stages in order. It exists so /replay stays free and repeatable for debugging:
@@ -68,15 +68,17 @@ def replay(event: Event, delay: float = 0.2):
             time.sleep(delay)
 
 
-# Reads NVIDIA_API_KEY from the environment, which docker-compose fills from the
-# repo-root .env via `env_file` - same as customer-agent and influencer-agent.
+# Reads ANTHROPIC_API_KEY from the environment, which docker-compose fills from
+# the repo-root .env via `env_file` - same as every agent on this branch.
 # Running outside Docker means putting it in the environment yourself.
-llm = ChatNVIDIA(
-    model="meta/llama-3.1-8b-instruct",
+#
+# Only generate() calls this; replay() plays the scripted feed and costs nothing.
+llm = ChatAnthropic(
+    model="claude-haiku-4-5",
     temperature=0.7,
-    # Default is 1024. Press events are the longest thing asked for (5-15 lines),
-    # so this bounds a rambling response without truncating a well-behaved one.
-    max_completion_tokens=400,
+    # Press events are the longest thing asked for (5-15 lines), so this bounds
+    # a rambling response without truncating a well-behaved one.
+    max_tokens=400,
 )
 system_msg = ("You are an event generator."
               "Backstory: There is a tuna company called HappyTuna that is goes through a Salmonella outbreak crisis with their product."

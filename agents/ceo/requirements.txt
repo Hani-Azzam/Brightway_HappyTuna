@@ -37,9 +37,11 @@ pytest-asyncio==1.4.0
 # connection.py to classify connection failures. Left unpinned so mcp's own
 # constraint governs the version.
 # --- CEO agent runtime -------------------------------------------------------
-# The LLM client (services/llm_client.py) speaks Gemini through LangChain.
-# langchain-google-genai matches the 1.x langchain-core line pinned above; its
-# ChatGoogleGenerativeAI(model=, api_key=, temperature=) surface -- the only
-# part llm_client.py uses -- is stable across that range.
-langchain-google-genai>=2.0.0
+# The LLM client (services/llm_client.py) speaks Claude through LangChain.
+# stable-release branch: every agent runs Claude Haiku, so the whole simulation
+# depends on one provider and one key. langchain-anthropic matches the 1.x
+# langchain-core line pinned above; its ChatAnthropic(model=, api_key=,
+# temperature=, max_tokens=) surface -- the only part llm_client.py uses -- is
+# stable across that range.
+langchain-anthropic>=1.0.0
 python-dotenv>=1.0.0,<2.0.0

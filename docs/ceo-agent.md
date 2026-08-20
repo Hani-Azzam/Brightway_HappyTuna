@@ -15,7 +15,7 @@ Code: [`agents/ceo/`](../agents/ceo/) · Gateway details: [`agents/ceo/README.md
 flowchart TB
     subgraph ceo["ceo-agent container"]
         AP["autopilot.py<br/>(event listener + periodic review)"]
-        AG["CeoAgent<br/>plan-solve loop (Gemini)"]
+        AG["CeoAgent<br/>plan-solve loop (Claude Haiku)"]
         MEM[("ConversationMemory<br/>sliding window + summary<br/>/data/ceo_memory.json")]
         EX["ToolExecutor<br/>(retries, trace)"]
         GW["MCP Gateway<br/>policy · identity · dry-run · audit"]
@@ -53,7 +53,7 @@ Cycles never overlap — a periodic review that fires mid-cycle is skipped.
 sequenceDiagram
     participant T as Trigger (press/review)
     participant C as CeoAgent
-    participant L as Gemini (flash-lite)
+    participant L as Claude Haiku
     participant G as Gateway
     participant M as Memory
 

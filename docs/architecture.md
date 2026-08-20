@@ -13,11 +13,11 @@ flowchart TB
     EG["Event generator<br/>scripted or LLM crisis feed<br/>(SSE, tags: customer / press)"]
 
     subgraph agents["Agents"]
-        CU["Customer agent<br/>5 personas · NIM llama-3.1-8b<br/>+ NeMo Guardrails"]
-        IN["Influencer agent<br/>persona poller · NIM llama-3.1-8b"]
-        JO["Journalist agent<br/>ReAct + Chroma RAG · Gemini"]
+        CU["Customer agent<br/>5 personas · Claude Haiku<br/>+ NeMo Guardrails"]
+        IN["Influencer agent<br/>persona poller · Claude Haiku"]
+        JO["Journalist agent<br/>ReAct · Claude Haiku<br/>Chroma RAG · Gemini embeddings"]
         EM["Employee agents<br/>5 personas · Claude Haiku"]
-        CEO["CEO agent<br/>plan-solve + memory · Gemini<br/>via MCP gateway"]
+        CEO["CEO agent<br/>plan-solve + memory · Claude Haiku<br/>via MCP gateway"]
     end
 
     subgraph platforms["Platforms"]
@@ -79,22 +79,31 @@ flowchart TB
 
 ## LLM usage (all deliberately small/fast models)
 
+On the **`stable-release`** branch every agent runs the same model, so a run
+depends on exactly one provider. (`main` keeps the original mixed roster: NIM for
+the customer and influencer agents, Gemini for the journalist and CEO.)
+
 | Component | Provider · model | Used for |
 |---|---|---|
-| Customer agent | NVIDIA NIM · `meta/llama-3.1-8b-instruct` (via NeMo Guardrails) | persona decisions |
-| Influencer agent | NVIDIA NIM · `meta/llama-3.1-8b-instruct` | amplify/criticize/ignore decisions |
-| Journalist agent | Gemini · `gemini-2.5-flash-lite` (+ `gemini-embedding-001`) | ReAct loop + RAG embeddings |
-| CEO agent | Gemini · `gemini-2.5-flash-lite` | planning, execution, summaries, memory folding |
+| Customer agent | Anthropic · `claude-haiku-4-5` (via NeMo Guardrails) | persona decisions |
+| Influencer agent | Anthropic · `claude-haiku-4-5` | amplify/criticize/ignore decisions |
+| Journalist agent | Anthropic · `claude-haiku-4-5` | ReAct loop |
+| Journalist embeddings | Gemini · `gemini-embedding-001` | RAG knowledge base — Anthropic has no embeddings API |
+| CEO agent | Anthropic · `claude-haiku-4-5` | planning, execution, summaries, memory folding |
 | Employee agents | Anthropic · `claude-haiku-4-5` | persona ReAct cycles |
-| Event generator | NVIDIA NIM · `meta/llama-3.1-8b-instruct` | optional LLM feed mode |
+| Event generator | Anthropic · `claude-haiku-4-5` | optional LLM feed mode (`/replay` needs no LLM) |
 | Social network analytics | Anthropic · `claude-haiku-4-5` | optional AI sentiment (off by default) |
 
-Each agent's provider is swappable without touching its logic: the customer
-agent through `CUSTOMER_LLM_*` in `.env` (patched into the guardrails config at
-load time), the influencer through `NAT_CONFIG_FILE` (one of three `configs/`
-files). This exists because the two NIM agents share a single upstream — when
-build.nvidia.com's chat endpoint degrades, both go down together while the
-Gemini and Anthropic agents keep running.
+Two agents reach Anthropic through its **OpenAI-compatible endpoint**
+(`https://api.anthropic.com/v1/`) rather than a native client, because their
+frameworks only speak the OpenAI wire format: NeMo Guardrails' default LLM path
+(customer agent) and NAT, which ships no Anthropic LLM type (influencer). Neither
+needed a new dependency as a result. The journalist, CEO, and employees use
+native Anthropic clients.
+
+Providers stay swappable without touching agent logic: the customer agent
+through `CUSTOMER_LLM_*` in `.env` (patched into the guardrails config at load
+time), the influencer through `NAT_CONFIG_FILE` (one of the `configs/` files).
 
 ## Isolation rules (inherited from the original research design)
 
@@ -148,27 +157,26 @@ curl -s localhost:8006/health                  # is the feed alive?
 ```
 
 **"got no decision: ... the model provider did not answer"** — the provider is
-down or throttling you, not the agent. NVIDIA's shared endpoint is the usual
-suspect; its signature is a request that hangs ~300s and then returns
-`HTTP 504` with `Nvcf-Status: errored`, while `GET /v1/models` still answers
-instantly:
+down, throttling you, or the key is wrong; it isn't the agent. On this branch
+every agent shares one provider, so this either affects all five at once or
+none. Probe it directly — the same endpoint the customer and influencer agents
+use, so a `200` here rules the provider out entirely:
 
 ```bash
-curl -m 60 -X POST https://integrate.api.nvidia.com/v1/chat/completions \
-  -H "Authorization: Bearer $NVIDIA_API_KEY" -H "Content-Type: application/json" \
-  -d '{"model":"meta/llama-3.1-8b-instruct","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+curl -m 60 -X POST https://api.anthropic.com/v1/chat/completions \
+  -H "Authorization: Bearer $ANTHROPIC_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"claude-haiku-4-5","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
 ```
 
-The customer and influencer agents are the two on NIM. To keep demoing while
-it's degraded, uncomment the **NIM outage escape hatch** block in `.env` — it
-repoints both at Gemini's OpenAI-compatible endpoint with the key you already
-have — then:
+A `401` means the key; a `429` means rate limits (agents retry, but a whole
+`/replay` arriving at once is a burst — use `/emit` instead); a hang means
+Anthropic. Only the journalist has a second dependency: its knowledge-base
+embeddings go to Gemini, so a Gemini outage stops the journalist at boot while
+everyone else keeps running.
 
-```bash
-docker compose up -d --no-deps customer-agent influencer-agent
-```
-
-Comment it back out to return to NIM; nothing else in the project changes.
+To move an agent to a different provider, see the `CUSTOMER_LLM_*` override
+block in `.env.example` (customer) and the `configs/` files selected by
+`NAT_CONFIG_FILE` (influencer) — neither requires touching agent code.
 
 ## Keeping LLM costs down
 

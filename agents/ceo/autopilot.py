@@ -21,7 +21,7 @@ Environment knobs (all optional):
     CEO_REVIEW_INTERVAL      seconds between reviews       (default 900, 0=off)
     CEO_EVENT_DEBOUNCE       seconds to batch press events (default 20)
     CEO_MAX_PLAN_STEPS       plan length cap               (default 8)
-    GEMINI_API_KEY           required — the CEO's LLM
+    ANTHROPIC_API_KEY        required — the CEO's LLM (Claude Haiku)
     EVENT_GENERATOR_URL      the press feed (compose sets it)
 """
 from __future__ import annotations
@@ -119,9 +119,9 @@ async def main() -> None:
     max_steps = int(os.environ.get("CEO_MAX_PLAN_STEPS", "8"))
 
     llm = LlmClient(LlmConfig(
-        api_key=os.environ.get("GEMINI_API_KEY", ""),
-        model_name=os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash-lite"),
-        temperature=float(os.environ.get("GEMINI_TEMPERATURE", "0.7")),
+        api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+        model_name=os.environ.get("CEO_MODEL_NAME", "claude-haiku-4-5"),
+        temperature=float(os.environ.get("CEO_TEMPERATURE", "0.7")),
     ))
 
     executor = ToolExecutor(max_retries=2, base_delay=0.5)

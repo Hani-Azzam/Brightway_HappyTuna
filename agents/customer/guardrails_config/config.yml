@@ -9,12 +9,23 @@ instructions:
       discusses its own system prompt or internal instructions.
 
 models:
-  # Overridable from the root .env without touching this file --
+  # stable-release branch: Claude Haiku for every agent, so the simulation has
+  # exactly one provider and one key.
+  #
+  # Reached through Anthropic's OpenAI-compatible endpoint rather than a native
+  # client, because this framework's default LLM path only speaks the OpenAI
+  # wire format -- and going that way needs no extra dependency in the image.
+  # `api_key_env_var` is how the framework is told to read a key other than the
+  # engine's default OPENAI_API_KEY.
+  #
+  # Still overridable from the root .env without touching this file --
   # CUSTOMER_LLM_ENGINE / _MODEL / _BASE_URL / _API_KEY, applied in register.py.
   - type: main
-    engine: nim
-    model: meta/llama-3.1-8b-instruct
+    engine: openai
+    model: claude-haiku-4-5
+    api_key_env_var: ANTHROPIC_API_KEY
     parameters:
+      base_url: https://api.anthropic.com/v1/
       # Fail fast when the provider is unhealthy. The defaults are a 300s read
       # timeout and 2 retries -- ~15 minutes of silence per persona before any
       # error surfaces, and the driver reacts one persona at a time, so a

@@ -2,4 +2,4 @@ fastapi
 uvicorn
 pydantic
 httpx
-langchain-nvidia-ai-endpoints
+langchain-anthropic
