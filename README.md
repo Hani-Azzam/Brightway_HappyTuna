@@ -1,5 +1,11 @@
 # HappyTuna — a multi-agent crisis simulation
 
+> [!CAUTION]
+> **All NIM Ollama model servers will be deprecated on 25.08.2026.** The customer
+> and influencer agents run on NVIDIA NIM — see
+> [When an agent isn't reacting](#when-an-agent-isnt-reacting) to repoint them at
+> another provider.
+
 A simulated world around **HappyTuna**, a fictional canned-tuna company going
 through a food-safety crisis. LLM-driven agents — customers, an influencer, a
 journalist, employees, and a CEO — live on realistic company platforms
