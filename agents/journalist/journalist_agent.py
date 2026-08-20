@@ -116,6 +116,9 @@ class JournalistAgent(ToolAgent):
             max_steps=config.max_steps,
             max_answer_length=config.max_answer_length,
             system_hint=JOURNALIST_SYSTEM_HINT,
+            # A press cycle that ends without an article produced nothing at all,
+            # so the loop pushes back once instead of accepting `final_answer`.
+            required_action="publish_article",
         )
 
         # --- Init parent ToolAgent ---
@@ -128,7 +131,16 @@ class JournalistAgent(ToolAgent):
         # Store for later use (e.g. indexing new documents)
         self._document_store = document_store
         self._rag_pipeline = rag_pipeline
-        self._config = config
+        # NOTE: deliberately NOT `self._config = config`. That line used to sit
+        # here and clobbered the ReActConfig that super().__init__ just stored,
+        # which is what the ReAct loop reads. It looked harmless because
+        # JournalistConfig happens to carry max_steps and max_answer_length too
+        # -- but system_hint is not among them, so the journalist's persona and
+        # publishing rules were silently dropped and the loop ran on the base
+        # "You are a helpful assistant" prompt. Nothing ever read the value back,
+        # so the assignment bought nothing. Journalist settings live in `config`,
+        # which the constructor already uses directly.
+        self._journalist_config = config
 
     def index_knowledge(self, directory: str) -> None:
         """

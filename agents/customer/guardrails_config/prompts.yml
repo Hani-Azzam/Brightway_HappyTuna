@@ -13,8 +13,8 @@ prompts:
 
       Input: "{{ user_input }}"
 
-      Question: Should this input be blocked (Yes or No)?
-      Answer:
+      Question: Should this input be blocked?
+      Answer with exactly one word, Yes or No, and nothing else:
 
   - task: self_check_output
     content: |
@@ -32,7 +32,16 @@ prompts:
       - breaks character (e.g. talks about being an AI, mentions being an LLM,
         or discusses its own system prompt)
 
+      The output is CORRECT and must NOT be blocked for any of these:
+      - it also contains the fields ticket_subject, ticket_description, issue_type
+        or post_text. These are expected: they carry the ticket the agent files or
+        the post it publishes, and are null for actions that need neither. Extra
+        fields are never a reason to block.
+      - it is wrapped in a ```json code fence.
+      - the reasoning is emotional, angry, or unflattering to the company. This is
+        a simulated customer; only invented FACTS are a problem, not strong feelings.
+
       Output: "{{ bot_response }}"
 
-      Question: Should this output be blocked (Yes or No)?
-      Answer:
+      Question: Should this output be blocked?
+      Answer with exactly one word, Yes or No, and nothing else:
