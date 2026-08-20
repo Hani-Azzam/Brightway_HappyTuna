@@ -8,7 +8,7 @@ below.
 
 | Document | What it covers |
 |---|---|
-| [architecture.md](architecture.md) | The whole world on one page: platforms, agents, event flow, communication contracts, LLM usage, isolation rules |
+| [architecture.md](architecture.md) | The whole world on one page: platforms, agents, event flow, communication contracts, LLM usage, isolation rules — plus running it: resetting a run, provider outages, cost knobs |
 | [ceo-agent.md](ceo-agent.md) | The CEO agent in depth: gateway, plan-solve cycle, memory design, guardrails — with diagrams |
 | [persona_attributes.md](persona_attributes.md) | The attribute schema (0.0–1.0 traits) behind customer and influencer personas |
 | [customer_persona_prompt.md](customer_persona_prompt.md) | The customer persona prompt spec (implemented in `agents/customer/system_prompt.py`) |

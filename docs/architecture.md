@@ -96,7 +96,26 @@ files). This exists because the two NIM agents share a single upstream — when
 build.nvidia.com's chat endpoint degrades, both go down together while the
 Gemini and Anthropic agents keep running.
 
+## Isolation rules (inherited from the original research design)
+
+- **No privileged access:** no agent sees another agent's internal state,
+  ground truth, or future events — only what the platforms expose.
+- **Identity is never an argument:** every platform binds the caller's
+  identity at the connection/session layer (Bearer token, MCP session login),
+  so a model cannot impersonate another agent by crafting tool arguments.
+- **The CEO cannot manufacture its own public** (no ticket creation, no
+  analytics controls) — enforced in the gateway's role policy, not just in
+  prompts.
+
+---
+
+# Running it
+
 ## State: what a run starts from
+
+```bash
+docker compose down && docker compose up --build   # fresh, empty world
+```
 
 | Store | Lives in | Reset by |
 |---|---|---|
@@ -108,13 +127,57 @@ The public feed is deliberately the volatile one: it is the simulation's visible
 output, so a run should start blank and contain only what the agents wrote.
 `SEED_DB=true` loads the demo crisis arc instead.
 
-## Isolation rules (inherited from the original research design)
+The flip side of that: the feed lives and dies with its container, and
+`docker compose up --build <agent>` rebuilds that agent's *dependencies* too —
+which recreates the social network and clears the feed mid-run. To restart one
+agent without touching the world it lives in:
 
-- **No privileged access:** no agent sees another agent's internal state,
-  ground truth, or future events — only what the platforms expose.
-- **Identity is never an argument:** every platform binds the caller's
-  identity at the connection/session layer (Bearer token, MCP session login),
-  so a model cannot impersonate another agent by crafting tool arguments.
-- **The CEO cannot manufacture its own public** (no ticket creation, no
-  analytics controls) — enforced in the gateway's role policy, not just in
-  prompts.
+```bash
+docker compose up -d --no-deps --build customer-agent
+```
+
+## When an agent isn't reacting
+
+The platforms are plain web services — if a page loads, that half works. Agents
+only ever fail for two reasons: they never got the event, or their model
+provider didn't answer.
+
+```bash
+docker compose logs --tail 30 customer-agent   # one line per persona per event
+curl -s localhost:8006/health                  # is the feed alive?
+```
+
+**"got no decision: ... the model provider did not answer"** — the provider is
+down or throttling you, not the agent. NVIDIA's shared endpoint is the usual
+suspect; its signature is a request that hangs ~300s and then returns
+`HTTP 504` with `Nvcf-Status: errored`, while `GET /v1/models` still answers
+instantly:
+
+```bash
+curl -m 60 -X POST https://integrate.api.nvidia.com/v1/chat/completions \
+  -H "Authorization: Bearer $NVIDIA_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"meta/llama-3.1-8b-instruct","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+```
+
+The customer and influencer agents are the two on NIM. To keep demoing while
+it's degraded, uncomment the **NIM outage escape hatch** block in `.env` — it
+repoints both at Gemini's OpenAI-compatible endpoint with the key you already
+have — then:
+
+```bash
+docker compose up -d --no-deps customer-agent influencer-agent
+```
+
+Comment it back out to return to NIM; nothing else in the project changes.
+
+## Keeping LLM costs down
+
+- The scripted feed (`POST /replay`) costs nothing to generate; agent
+  reactions are the only LLM spend, and every agent runs a small model.
+- `AI_ANALYSIS_ENABLED=false` (default) keeps social-network sentiment on a
+  free lexicon scorer.
+- `CEO_DRY_RUN=true` lets the CEO observe and reason without writing anywhere.
+- `CEO_REVIEW_INTERVAL=0` and `EMPLOYEE_SUPPORT_SWEEP_INTERVAL=0` turn off the
+  periodic (token-spending) wake-ups; agents then act only on events.
+- Run a single event instead of a replay:
+  `curl -X POST http://localhost:8006/emit -H "Content-Type: application/json" -d '{"tag":"press","text":"..."}'`
